@@ -162,8 +162,9 @@ def fetch_and_upload_marta_data():
 
 
 
+
 # Schedule the function to run every 8 minutes
-schedule.every(5).minutes.do(fetch_and_upload_marta_data)
+schedule.every(3).minutes.do(fetch_and_upload_marta_data)
 
 # Keep the script running
 try:
