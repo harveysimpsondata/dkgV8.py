@@ -40,13 +40,14 @@ print_json(info_result)
 # ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/261920"
 #ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/262536"
 #ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/263670"
+ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/268403"
 
 
 # other ual
 #ual="did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/249055"
 # Query latest finalized state
 try:
-    get_asset_result = dkg.asset.get(ual, state="latest_finalized", content_visibility="public")
+    get_asset_result = dkg.asset.get(ual, state="latest_finalized")
     print("======================== ASSET DATA RECEIVED")
     print_json(get_asset_result)
 except Exception as e:

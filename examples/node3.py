@@ -1,11 +1,10 @@
 import os
 import requests
 import json
-import schedule
-import time
 from dotenv import load_dotenv
 from dkg import DKG
 from dkg.providers import BlockchainProvider, NodeHTTPProvider
+import time
 
 # Load environment variables
 load_dotenv()
@@ -18,9 +17,7 @@ rpc_uri = os.getenv('BASE_TESTNET_URI')
 private_key = os.getenv('PRIVATE_KEY')
 
 def fetch_and_upload_marta_data():
-
     url = "https://developerservices.itsmarta.com:18096/itsmarta/railrealtimearrivals/traindata"
-
     params = {
         'apiKey': marta_api,
     }
@@ -46,7 +43,6 @@ def fetch_and_upload_marta_data():
             "@graph": []
         }
 
-
         # Iterate over the response data to format each train event
         for train in data[:1]:
             train_event = {
@@ -62,13 +58,11 @@ def fetch_and_upload_marta_data():
             }
             json_ld_data["@graph"].append(train_event)
 
-
         # Step 1: Print the JSON-LD format of the data
         json_ld_str = json.dumps(json_ld_data, indent=2)
         print(json_ld_str)
 
         # DKG Integration (up to Step 4)
-
         node_provider = NodeHTTPProvider(f"http://{node_hostname}:{node_port}")
         blockchain_provider = BlockchainProvider(
             "testnet",
@@ -79,18 +73,15 @@ def fetch_and_upload_marta_data():
 
         dkg = DKG(node_provider, blockchain_provider)
 
-
         # Step 2: Format the asset (assertion) for the DKG
         formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
         print("======================== ASSET FORMATTED")
         print(json.dumps(formatted_assertions, indent=4))
 
-
         # Step 3: Calculate the Merkle root (public assertion ID)
         public_assertion_id = dkg.assertion.get_public_assertion_id({"public": json_ld_data})
         print("======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED")
         print(public_assertion_id)
-
 
         # Step 4: Get the bid suggestion for the asset
         public_assertion_size = dkg.assertion.get_size({"public": json_ld_data})
@@ -102,14 +93,11 @@ def fetch_and_upload_marta_data():
         print("======================== BID SUGGESTION CALCULATED")
         print(json.dumps(bid_suggestion, indent=4))
 
-
-
         # Step 5: Check current allowance
         try:
             current_allowance = dkg.asset.get_current_allowance()
             print("======================== CURRENT ALLOWANCE")
             print(current_allowance)
-
 
             # Step 6: Check if current allowance is less than bid suggestion
             if current_allowance < bid_suggestion:
@@ -123,7 +111,6 @@ def fetch_and_upload_marta_data():
         except Exception as e:
             print(f"Error fetching current allowance: {e}")
 
-
         # Step 7: Create the asset on the OriginTrail network
         try:
             create_asset_result = dkg.asset.create({"public": json_ld_data}, 2)  # Replication factor of 2
@@ -132,13 +119,8 @@ def fetch_and_upload_marta_data():
         except Exception as e:
             print(f"Error creating asset: {e}")
 
-
-
-
-
         # Step 8: Query the asset from the network to verify creation
         if create_asset_result and create_asset_result.get("UAL"):
-
             validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
             print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
 
@@ -148,28 +130,11 @@ def fetch_and_upload_marta_data():
                 print(json.dumps(get_asset_result, indent=4))
             except Exception as e:
                 print(f"Error retrieving the asset: {e}")
-
-            # Step 9: Query private data
-            # try:
-            #     get_private_asset_result = dkg.asset.get(create_asset_result["UAL"], content_visibility="private", state="latest_finalized")
-            #     print("======================== PRIVATE ASSET RESOLVED")
-            #     print(json.dumps(get_private_asset_result, indent=4))
-            # except Exception as e:
-            #     print(f"Error retrieving the private asset: {e}")
-
     else:
         print(f"Failed to get data: {r.status_code}")
 
-
-
-
-# Schedule the function to run every 8 minutes
-schedule.every(4).minutes.do(fetch_and_upload_marta_data)
-
-# Keep the script running
-try:
-    while True:
-        schedule.run_pending()
-        time.sleep(2)
-except KeyboardInterrupt:
-    print("Process interrupted. Exiting gracefully.")
+# Run the function once
+while True:
+    fetch_and_upload_marta_data()
+    print("Waiting for 2 minutes before next run...")
+    time.sleep(120)

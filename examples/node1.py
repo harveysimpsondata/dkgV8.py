@@ -47,17 +47,17 @@ content = {
     "public": {
         "@context": ["http://schema.org"],
         "@type": "Place",
-        "name": "Atlanta",
+        "name": "Houston",
         "address": {
             "@type": "PostalAddress",
-            "addressLocality": "Atlanta",
-            "addressRegion": "GA",
+            "addressLocality": "Houston",
+            "addressRegion": "TX",
             "addressCountry": "US"
         },
         "geo": {
             "@type": "GeoCoordinates",
-            "latitude": 33.7490,
-            "longitude": -84.3880
+            "latitude": 29.7601,
+            "longitude": -95.3701
         }
     }
 }

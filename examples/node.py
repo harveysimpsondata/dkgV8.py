@@ -47,13 +47,7 @@ divider()
 
 # Step 2: Define the asset (content) you want to publish
 content = {
-    "public": {
-        "@context": ["http://schema.org"],
-        "@id": "uuid:1",
-        "company": "BAH",
-        "user": {"@id": "uuid:user:1"},
-        "city": {"@id": "uuid:atlanta"},
-    },
+
     "private": {
         "@context": ["http://schema.org"],
         "@graph": [
@@ -80,57 +74,57 @@ public_assertion_size = dkg.assertion.get_size(content)
 bid_suggestion = dkg.network.get_bid_suggestion(
     public_assertion_id,
     public_assertion_size,
-    2,  # Replication factor
+    1,  # Replication factor
 )
 print("======================== BID SUGGESTION CALCULATED")
 print(bid_suggestion)
 divider()
 
-# Step 6: Increase allowance for the asset creation
-try:
-    allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
-    print("======================== INCREASE ALLOWANCE")
-    print(allowance_increase)
-except Exception as e:
-    print(f"Error increasing allowance: {e}")
-divider()
-
-# Step 7: Create the asset on the OriginTrail network
-try:
-    create_asset_result = dkg.asset.create(content, 2)  # Replication factor of 2
-    print("======================== ASSET CREATED")
-    print_json(create_asset_result)
-except Exception as e:
-    print(f"Error creating asset: {e}")
-divider()
-
-# Step 8: Validate the UAL of the created asset
-if create_asset_result and create_asset_result.get("UAL"):
-    validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
-    print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
-    divider()
-
-    # Step 9: Query the asset from the network to verify creation
-    try:
-        get_asset_result = dkg.asset.get(create_asset_result["UAL"])
-        print("======================== ASSET RESOLVED")
-        print_json(get_asset_result)
-    except Exception as e:
-        print(f"Error retrieving the asset: {e}")
-
-    # Step 10: Query private data
-    try:
-        get_private_asset_result = dkg.asset.get(create_asset_result["UAL"], content_visibility="private")
-        print("======================== PRIVATE ASSET RESOLVED")
-        print_json(get_private_asset_result)
-    except Exception as e:
-        print(f"Error retrieving the private asset: {e}")
-
-    # Step 11: Decrease allowance (Optional)
-    try:
-        dkg.asset.decrease_allowance(bid_suggestion)
-        print("Allowance successfully decreased.")
-    except Exception as e:
-        print(f"Error decreasing allowance: {e}")
-else:
-    print("Asset creation failed or UAL missing.")
+# # Step 6: Increase allowance for the asset creation
+# try:
+#     allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
+#     print("======================== INCREASE ALLOWANCE")
+#     print(allowance_increase)
+# except Exception as e:
+#     print(f"Error increasing allowance: {e}")
+# divider()
+#
+# # Step 7: Create the asset on the OriginTrail network
+# try:
+#     create_asset_result = dkg.asset.create(content, 2)  # Replication factor of 2
+#     print("======================== ASSET CREATED")
+#     print_json(create_asset_result)
+# except Exception as e:
+#     print(f"Error creating asset: {e}")
+# divider()
+#
+# # Step 8: Validate the UAL of the created asset
+# if create_asset_result and create_asset_result.get("UAL"):
+#     validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
+#     print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
+#     divider()
+#
+#     # Step 9: Query the asset from the network to verify creation
+#     try:
+#         get_asset_result = dkg.asset.get(create_asset_result["UAL"])
+#         print("======================== ASSET RESOLVED")
+#         print_json(get_asset_result)
+#     except Exception as e:
+#         print(f"Error retrieving the asset: {e}")
+#
+#     # Step 10: Query private data
+#     try:
+#         get_private_asset_result = dkg.asset.get(create_asset_result["UAL"], content_visibility="private")
+#         print("======================== PRIVATE ASSET RESOLVED")
+#         print_json(get_private_asset_result)
+#     except Exception as e:
+#         print(f"Error retrieving the private asset: {e}")
+#
+#     # Step 11: Decrease allowance (Optional)
+#     try:
+#         dkg.asset.decrease_allowance(bid_suggestion)
+#         print("Allowance successfully decreased.")
+#     except Exception as e:
+#         print(f"Error decreasing allowance: {e}")
+# else:
+#     print("Asset creation failed or UAL missing.")
