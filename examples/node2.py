@@ -133,8 +133,7 @@ def fetch_and_upload_marta_data():
             print(f"Error creating asset: {e}")
 
 
-        validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
-        print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
+
 
 
         # Step 8: Query the asset from the network to verify creation
