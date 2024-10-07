@@ -124,30 +124,30 @@ def fetch_and_upload_marta_data():
             print(f"Error fetching current allowance: {e}")
 
 
-        # Step 7: Create the asset on the OriginTrail network
-        try:
-            create_asset_result = dkg.asset.create({"public": json_ld_data}, 2)  # Replication factor of 2
-            print("======================== ASSET CREATED")
-            print(json.dumps(create_asset_result, indent=4))
-        except Exception as e:
-            print(f"Error creating asset: {e}")
-
-
-
-
-
-        # Step 8: Query the asset from the network to verify creation
-        if create_asset_result and create_asset_result.get("UAL"):
-
-            validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
-            print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
-
-            try:
-                get_asset_result = dkg.asset.get(create_asset_result["UAL"], state="latest_finalized")
-                print("======================== ASSET RESOLVED")
-                print(json.dumps(get_asset_result, indent=4))
-            except Exception as e:
-                print(f"Error retrieving the asset: {e}")
+        # # Step 7: Create the asset on the OriginTrail network
+        # try:
+        #     create_asset_result = dkg.asset.create({"public": json_ld_data}, 2)  # Replication factor of 2
+        #     print("======================== ASSET CREATED")
+        #     print(json.dumps(create_asset_result, indent=4))
+        # except Exception as e:
+        #     print(f"Error creating asset: {e}")
+        #
+        #
+        #
+        #
+        #
+        # # Step 8: Query the asset from the network to verify creation
+        # if create_asset_result and create_asset_result.get("UAL"):
+        #
+        #     validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
+        #     print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
+        #
+        #     try:
+        #         get_asset_result = dkg.asset.get(create_asset_result["UAL"], state="latest_finalized")
+        #         print("======================== ASSET RESOLVED")
+        #         print(json.dumps(get_asset_result, indent=4))
+        #     except Exception as e:
+        #         print(f"Error retrieving the asset: {e}")
 
             # Step 9: Query private data
             # try:
@@ -161,15 +161,15 @@ def fetch_and_upload_marta_data():
         print(f"Failed to get data: {r.status_code}")
 
 
+fetch_and_upload_marta_data()
 
-
-# Schedule the function to run every 8 minutes
-schedule.every(4).minutes.do(fetch_and_upload_marta_data)
-
-# Keep the script running
-try:
-    while True:
-        schedule.run_pending()
-        time.sleep(2)
-except KeyboardInterrupt:
-    print("Process interrupted. Exiting gracefully.")
+# # Schedule the function to run every 8 minutes
+# schedule.every(10).minutes.do(fetch_and_upload_marta_data)
+#
+# # Keep the script running
+# try:
+#     while True:
+#         schedule.run_pending()
+#         time.sleep(2)
+# except KeyboardInterrupt:
+#     print("Process interrupted. Exiting gracefully.")

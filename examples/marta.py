@@ -36,7 +36,7 @@ if r.status_code == 200:
     }
 
     # Iterate over the response data to format each train event
-    for train in data[:10]:
+    for train in data[:5]:
         train_event = {
             "@type": "TrainEvent",
             "DESTINATION": train.get('DESTINATION'),

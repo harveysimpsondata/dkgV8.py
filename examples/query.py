@@ -36,7 +36,11 @@ print_json(info_result)
 
 # Asset UAL
 #ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/54085"
-ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/245266"
+#ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/245266"
+# ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/261920"
+#ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/262536"
+#ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/263670"
+
 
 # other ual
 #ual="did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/249055"
