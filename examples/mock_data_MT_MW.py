@@ -18,14 +18,15 @@ rpc_uri = os.getenv('BASE_TESTNET_URI')
 
 # Load multiple private keys (ensure they are defined in your .env)
 private_keys = [
-    os.getenv('PRIVATE_KEY_1'),
-    os.getenv('PRIVATE_KEY_2'),
-    os.getenv('PRIVATE_KEY_3'),
-    os.getenv('PRIVATE_KEY_4')
+    # os.getenv('PRIVATE_KEY_1'),
+    # os.getenv('PRIVATE_KEY_2'),
+    # os.getenv('PRIVATE_KEY_3'),
+    os.getenv('PRIVATE_KEY_4'),
+    os.getenv('PRIVATE_KEY_5')
 ]
 
 # Define the maximum number of knowledge assets to create
-max_assets = 10  # Set this to the number of assets you want to create for testing
+max_assets = 2  # Set this to the number of assets you want to create for testing
 
 # Function to load CSV files into a single DataFrame
 def load_csv_files(folder_path):
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     df = load_csv_files(folder_path)
 
     # Number of threads to use (should match the number of private keys)
-    num_threads = len(private_keys)
+    num_threads = 2
 
     # Define batch size for each thread
     batch_size = 2  # Number of assets to process per batch
@@ -192,4 +193,4 @@ if __name__ == '__main__':
                     print(f"Generated an exception: {exc}")
 
         print("Waiting 60 seconds before running again...")
-        time.sleep(60)  # Wait for 60 seconds before the next iteration
+        time.sleep(2)  # Wait for 60 seconds before the next iteration
