@@ -114,7 +114,7 @@ def fetch_and_upload_marta_data():
 try:
     while True:
         fetch_and_upload_marta_data()
-        print("Waiting for 2 minutes before next run...")
+        print("Waiting for 30 secs before next run...")
         time.sleep(30)  # 2 minutes
 except KeyboardInterrupt:
     print("Process interrupted. Exiting.")
