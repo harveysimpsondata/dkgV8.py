@@ -20,7 +20,11 @@ rpc_uri = os.getenv('BASE_TESTNET_URI')
 # Load private keys (two private keys for parallel processing)
 private_keys = [
     os.getenv('PRIVATE_KEY_1'),
-    os.getenv('PRIVATE_KEY_2')
+    os.getenv('PRIVATE_KEY_2'),
+    os.getenv('PRIVATE_KEY_3'),
+    os.getenv('PRIVATE_KEY_4'),
+    os.getenv('PRIVATE_KEY_5'),
+    os.getenv('PRIVATE_KEY_6')
 ]
 
 # Function to load CSV files into a single DataFrame
