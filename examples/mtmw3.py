@@ -6,7 +6,7 @@ from dkg import DKG
 from dkg.providers import BlockchainProvider, NodeHTTPProvider
 from dotenv import load_dotenv
 import uuid
-import time
+import asyncio
 import concurrent.futures
 
 # Load environment variables (assuming you have .env with blockchain details)
@@ -76,8 +76,8 @@ def create_json_ld(record):
     }
     return json_ld_data
 
-# Function to upload knowledge assets using the DKG with allowance management
-def upload_knowledge_asset_with_increase(json_ld_data, private_key):
+# Asynchronous function to handle uploading assets to the DKG
+async def upload_knowledge_asset_with_increase_async(json_ld_data, private_key):
     try:
         # Create the DKG instance with the provided private key
         node_provider = NodeHTTPProvider(f"http://{node_hostname}:{node_port}")
@@ -91,7 +91,6 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
 
         # Format the knowledge asset for the DKG
         formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
-        print("======================== ASSET FORMATTED")
 
         # Calculate the bid suggestion for the asset
         public_assertion_id = dkg.assertion.get_public_assertion_id({"public": json_ld_data})
@@ -101,70 +100,63 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
             public_assertion_size,
             1  # Replication factor
         )
-        print("======================== BID SUGGESTION CALCULATED")
-        print(bid_suggestion)
 
-        # Increase allowance if needed
-        allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
-        print("======================== ALLOWANCE INCREASED")
-        print(allowance_increase)
+        # Check current allowance
+        current_allowance = dkg.asset.get_current_allowance()
 
-        # Create the asset after increasing allowance
-        create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
-        print("======================== ASSET CREATED")
+        # Increase allowance only if the current allowance is below the bid suggestion
+        if current_allowance < bid_suggestion:
+            print(f"Current allowance ({current_allowance}) is less than bid suggestion ({bid_suggestion}). Increasing allowance...")
+            await asyncio.to_thread(dkg.asset.increase_allowance, bid_suggestion)
+        else:
+            print(f"Current allowance ({current_allowance}) is sufficient. No increase needed.")
 
+        # Now, upload the asset regardless of whether allowance was increased or not
+        create_asset_result = await asyncio.to_thread(dkg.asset.create, {"public": json_ld_data}, 1)
+
+        # Confirm the asset was created
         if create_asset_result and create_asset_result.get("UAL"):
             validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
             print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
+        else:
+            print(f"Asset creation failed for public assertion ID: {public_assertion_id}")
 
     except Exception as e:
         print(f"Error creating asset: {e}")
 
-# Main execution
-if __name__ == '__main__':
-    # Path to the folder containing the CSV files
-    folder_path = '/Users/leesimpson/mock_data'
+# Function to format and submit the assets using multithreading and asyncio
+async def format_and_upload_assets(df, private_keys, num_assets=100):
+    loop = asyncio.get_running_loop()
 
-    # Load all CSV files into a single DataFrame
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        for _ in range(num_assets):
+            # Generate and format the asset, then upload it immediately
+            random_record = await loop.run_in_executor(executor, generate_random_record, df)
+            random_record['id'] = generate_unique_id(
+                random_record['first_name'],
+                random_record['last_name'],
+                random_record['email'],
+                random_record['gender'],
+                random_record['ip_address']
+            )
+            json_ld_data = create_json_ld(random_record)
+
+            # Alternate between private keys for parallel uploads
+            private_key = private_keys[_ % len(private_keys)]
+
+            # Immediately upload the asset as it's ready
+            asyncio.create_task(upload_knowledge_asset_with_increase_async(json_ld_data, private_key))
+
+# Main execution loop
+async def main():
+    folder_path = '../mock_data'
     df = load_csv_files(folder_path)
 
-    # Set up threading for multithreaded execution
-    num_threads = os.cpu_count()  # Adjust based on available system resources
+    while True:
+        await format_and_upload_assets(df, private_keys, num_assets=50)
+        print("Waiting 10 seconds before running the next batch...")
+        await asyncio.sleep(1)
 
-    # Thread pool executor for parallel uploads
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        while True:
-            futures = []
-            # Create and upload 1000 assets in parallel
-            for _ in range(10):  # Create 1000 knowledge assets
-                # Generate a random record from the DataFrame
-                random_record = generate_random_record(df)
-
-                # Generate a unique ID for the selected record
-                random_record['id'] = generate_unique_id(
-                    random_record['first_name'],
-                    random_record['last_name'],
-                    random_record['email'],
-                    random_record['gender'],
-                    random_record['ip_address']
-                )
-
-                # Create JSON-LD data
-                json_ld_data = create_json_ld(random_record)
-
-                # Use alternating private keys for parallel uploads
-                private_key = private_keys[_ % len(private_keys)]
-
-                # Submit the task to the executor for parallel execution
-                futures.append(executor.submit(upload_knowledge_asset_with_increase, json_ld_data, private_key))
-
-            # Ensure all threads complete their tasks
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    result = future.result()
-                except Exception as exc:
-                    print(f"Generated an exception: {exc}")
-
-            # Wait for 60 seconds before running the next batch
-            print("Waiting 60 seconds before running the next batch...")
-            time.sleep(60)
+# Run the asyncio event loop
+if __name__ == '__main__':
+    asyncio.run(main())

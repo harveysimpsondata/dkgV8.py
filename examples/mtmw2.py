@@ -76,6 +76,7 @@ def create_json_ld(record):
     }
     return json_ld_data
 
+
 # Function to upload knowledge assets using the DKG with allowance management
 def upload_knowledge_asset_with_increase(json_ld_data, private_key):
     try:
@@ -120,10 +121,11 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
     except Exception as e:
         print(f"Error creating asset: {e}")
 
+
 # Main execution
 if __name__ == '__main__':
     # Path to the folder containing the CSV files
-    folder_path = '/Users/leesimpson/mock_data'
+    folder_path = '/Users/leesimpson/PycharmProjects/dkgV8.py/mock_data'
 
     # Load all CSV files into a single DataFrame
     df = load_csv_files(folder_path)
