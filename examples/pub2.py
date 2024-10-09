@@ -19,8 +19,8 @@ rpc_uri = os.getenv('BASE_TESTNET_URI')
 
 # Load private keys (two private keys for parallel processing)
 private_keys = [
-    os.getenv('PRIVATE_KEY_4'),
-    os.getenv('PRIVATE_KEY_5')
+    os.getenv('PRIVATE_KEY_1'),
+    os.getenv('PRIVATE_KEY_2')
 ]
 
 # Function to load CSV files into a single DataFrame
@@ -78,6 +78,7 @@ def create_json_ld(record):
 
 
 # Function to upload knowledge assets using the DKG with allowance management
+# Function to upload knowledge assets using the DKG with allowance management
 def upload_knowledge_asset_with_increase(json_ld_data, private_key):
     try:
         # Create the DKG instance with the provided private key
@@ -105,12 +106,19 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
         print("======================== BID SUGGESTION CALCULATED")
         print(bid_suggestion)
 
-        # Increase allowance if needed
-        allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
-        print("======================== ALLOWANCE INCREASED")
-        print(allowance_increase)
+        # Check current allowance
+        current_allowance = dkg.asset.get_current_allowance()
 
-        # Create the asset after increasing allowance
+        # Increase allowance only if the current allowance is less than the bid suggestion
+        if current_allowance < bid_suggestion:
+            print(f"Current allowance ({current_allowance}) is less than bid suggestion ({bid_suggestion}). Increasing allowance...")
+            allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
+            print("======================== ALLOWANCE INCREASED")
+            print(allowance_increase)
+        else:
+            print(f"Current allowance ({current_allowance}) is sufficient. No increase needed.")
+
+        # Create the asset after increasing allowance (if needed)
         create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
         print("======================== ASSET CREATED")
 
@@ -120,6 +128,7 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
 
     except Exception as e:
         print(f"Error creating asset: {e}")
+
 
 
 # Main execution
