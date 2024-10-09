@@ -23,7 +23,8 @@ private_keys = [
     os.getenv('PRIVATE_KEY_2'),
     os.getenv('PRIVATE_KEY_3'),
     os.getenv('PRIVATE_KEY_4'),
-    os.getenv('PRIVATE_KEY_5')
+    os.getenv('PRIVATE_KEY_5'),
+    os.getenv('PRIVATE_KEY_6')
     # Add more private keys as needed for parallel uploads
 ]
 
