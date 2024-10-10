@@ -24,7 +24,24 @@ rpc_uri = os.getenv('BASE_TESTNET_URI')
 private_keys = [
     os.getenv('PRIVATE_KEY_1'),
     os.getenv('PRIVATE_KEY_2'),
-
+    os.getenv('PRIVATE_KEY_3'),
+    os.getenv('PRIVATE_KEY_4'),
+    os.getenv('PRIVATE_KEY_5'),
+    os.getenv('PRIVATE_KEY_6'),
+    os.getenv('PRIVATE_KEY_7'),
+    os.getenv('PRIVATE_KEY_8'),
+    os.getenv('PRIVATE_KEY_9'),
+    os.getenv('PRIVATE_KEY_10'),
+    os.getenv('PRIVATE_KEY_11'),
+    os.getenv('PRIVATE_KEY_12'),
+    os.getenv('PRIVATE_KEY_13'),
+    os.getenv('PRIVATE_KEY_14'),
+    os.getenv('PRIVATE_KEY_15'),
+    os.getenv('PRIVATE_KEY_16'),
+    os.getenv('PRIVATE_KEY_17'),
+    os.getenv('PRIVATE_KEY_18'),
+    os.getenv('PRIVATE_KEY_19'),
+    os.getenv('PRIVATE_KEY_20')
 ]
 
 # Create a persistent connection to the node
