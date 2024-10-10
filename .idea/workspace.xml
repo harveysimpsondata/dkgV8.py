@@ -5,7 +5,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes">
-      <change beforePath="$PROJECT_DIR$/examples/pub5.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/pub5.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/local.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/marta.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_1_allow_MT.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_1_allow_copy.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_MT_MW.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_multithread.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_multithread2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mtmw.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mtmw2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mtmw3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/node.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/node1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/node2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/node3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/node4.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/query.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -228,7 +246,7 @@
       <workItem from="1728407866863" duration="11435000" />
       <workItem from="1728414389622" duration="4221000" />
       <workItem from="1728487378065" duration="8791000" />
-      <workItem from="1728513320223" duration="15463000" />
+      <workItem from="1728513320223" duration="16541000" />
     </task>
     <task id="LOCAL-00001" summary="changes">
       <option name="closed" value="true" />
@@ -390,7 +408,15 @@
       <option name="project" value="LOCAL" />
       <updated>1728574510533</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="changes">
+      <option name="closed" value="true" />
+      <created>1728580332116</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1728580332116</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
