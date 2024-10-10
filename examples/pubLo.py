@@ -8,27 +8,51 @@ from dotenv import load_dotenv
 import uuid
 import time
 import concurrent.futures
+from requests.adapters import HTTPAdapter
+from requests.sessions import Session
+from urllib3 import Retry
 
 # Load environment variables (assuming you have .env with blockchain details)
 load_dotenv()
 
-# Load environment variables
-node_hostname = os.getenv('NODE_HOSTNAME')
-node_port = os.getenv('NODE_PORT')
-rpc_uri = os.getenv('BASE_TESTNET_URI')
+# Set node to localhost (since the node will be running on the same machine)
+node_hostname = "localhost"  # For localhost deployment
+node_port = os.getenv('NODE_PORT')  # Ensure this matches your DKG node port
+rpc_uri = os.getenv('BASE_TESTNET_URI')  # This can stay the same
 
 # Load private keys (assign more private keys as needed)
 private_keys = [
-    #os.getenv('PRIVATE_KEY_1'),
-    #os.getenv('PRIVATE_KEY_2'),
-    #os.getenv('PRIVATE_KEY_3'),
-    #os.getenv('PRIVATE_KEY_4'),
-    #os.getenv('PRIVATE_KEY_5'),
-    #os.getenv('PRIVATE_KEY_6'),
+    os.getenv('PRIVATE_KEY_1'),
+    os.getenv('PRIVATE_KEY_2'),
+    os.getenv('PRIVATE_KEY_3'),
+    os.getenv('PRIVATE_KEY_4'),
+    os.getenv('PRIVATE_KEY_5'),
+    os.getenv('PRIVATE_KEY_6'),
     os.getenv('PRIVATE_KEY_7'),
     os.getenv('PRIVATE_KEY_8'),
     os.getenv('PRIVATE_KEY_9')
 ]
+
+# Create a persistent connection to the node
+class PersistentNodeHTTPProvider(NodeHTTPProvider):
+    def __init__(self, node_url):
+        super().__init__(node_url)
+
+        # Create a persistent session
+        self.session = Session()
+
+        # Configure the session to retry and use keep-alive
+        retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10)
+
+        # Mount the adapter for http(s)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    def post(self, endpoint, data):
+        url = f"{self.url}/{endpoint}"
+        response = self.session.post(url, json=data)
+        return response
 
 # Function to load CSV files into a single DataFrame
 def load_csv_files(folder_path):
@@ -83,12 +107,11 @@ def create_json_ld(record):
     }
     return json_ld_data
 
-
 # Function to upload knowledge assets using the DKG with allowance management
 def upload_knowledge_asset_with_increase(json_ld_data, private_key):
     try:
         # Create the DKG instance with the provided private key
-        node_provider = NodeHTTPProvider(f"http://{node_hostname}:{node_port}")
+        node_provider = PersistentNodeHTTPProvider(f"http://{node_hostname}:{node_port}")
         blockchain_provider = BlockchainProvider(
             "testnet",
             "base",
@@ -101,32 +124,20 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
         formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
         print("======================== ASSET FORMATTED")
 
-        # Calculate the bid suggestion for the asset
+        # Calculate Merkle Root (Public Assertion ID)
         public_assertion_id = dkg.assertion.get_public_assertion_id({"public": json_ld_data})
+        print('======================== PUBLIC ASSERTION ID (MERKLE ROOT) CALCULATED')
+        print(public_assertion_id)
+
+        # Get the size of the assertion
         public_assertion_size = dkg.assertion.get_size({"public": json_ld_data})
-        bid_suggestion = dkg.network.get_bid_suggestion(
-            public_assertion_id,
-            public_assertion_size,
-            1  # Replication factor
-        )
-        print("======================== BID SUGGESTION CALCULATED")
-        print(bid_suggestion)
+        print('======================== PUBLIC ASSERTION SIZE CALCULATED')
+        print(public_assertion_size)
 
-        # Check current allowance
-        current_allowance = dkg.asset.get_current_allowance()
-
-        # Increase allowance only if the current allowance is less than the bid suggestion
-        if current_allowance < bid_suggestion:
-            print(f"Current allowance ({current_allowance}) is less than bid suggestion ({bid_suggestion}). Increasing allowance...")
-            allowance_increase = dkg.asset.increase_allowance(bid_suggestion)
-            print("======================== ALLOWANCE INCREASED")
-            print(allowance_increase)
-        else:
-            print(f"Current allowance ({current_allowance}) is sufficient. No increase needed.")
-
-        # Create the asset after increasing allowance (if needed)
+        # Create the asset after allowance
         create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
-        print("======================== ASSET CREATED")
+        print('======================== ASSET CREATED')
+        print(create_asset_result)
 
         if create_asset_result and create_asset_result.get("UAL"):
             validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
@@ -135,18 +146,16 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key):
     except Exception as e:
         print(f"Error creating asset: {e}")
 
-
-
 # Main execution
 if __name__ == '__main__':
     # Path to the folder containing the CSV files
-    folder_path = '/Users/leesimpson/mock_data'
+    folder_path = '../mock_data'
 
     # Load all CSV files into a single DataFrame
     df = load_csv_files(folder_path)
 
     # Set up threading for multithreaded execution
-    num_threads = 3  # Specify 3 threads explicitly
+    num_threads = 9  # Specify 3 threads explicitly
 
     # Assign one private key to each thread
     def assign_private_key_to_thread(thread_id, df):
@@ -177,6 +186,6 @@ if __name__ == '__main__':
                 except Exception as exc:
                     print(f"Generated an exception: {exc}")
 
-            # Wait for 0.1 second before running the next batch
-            print("Waiting 0.1 second before running the next batch...")
-            time.sleep(0.1)
+            # Wait for 0.01 second before running the next batch
+            print("Waiting 0.01 second before running the next batch...")
+            time.sleep(0.01)

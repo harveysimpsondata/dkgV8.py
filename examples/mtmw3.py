@@ -154,8 +154,8 @@ async def main():
 
     while True:
         await format_and_upload_assets(df, private_keys, num_assets=50)
-        print("Waiting 10 seconds before running the next batch...")
-        await asyncio.sleep(1)
+        print("Waiting 0.10 seconds before running the next batch...")
+        await asyncio.sleep(0.1)
 
 # Run the asyncio event loop
 if __name__ == '__main__':
