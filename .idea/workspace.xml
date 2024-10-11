@@ -18,6 +18,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="v8/develop" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -36,43 +41,44 @@
   &quot;associatedIndex&quot;: 3
 }</component>
   <component name="ProjectId" id="2mzjqwiaf4yUYBqFRwaOcmgr8H9" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.dkg_query.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mainnet_node.executor&quot;: &quot;Run&quot;,
-    &quot;Python.marta.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data_1_allow.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data_1_allow_MT.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data_MT_MW.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data_multithread.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mock_data_multithread2.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mtmw.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mtmw2.executor&quot;: &quot;Run&quot;,
-    &quot;Python.mtmw3.executor&quot;: &quot;Run&quot;,
-    &quot;Python.node.executor&quot;: &quot;Run&quot;,
-    &quot;Python.node1.executor&quot;: &quot;Run&quot;,
-    &quot;Python.node2.executor&quot;: &quot;Run&quot;,
-    &quot;Python.node3.executor&quot;: &quot;Run&quot;,
-    &quot;Python.pub3.executor&quot;: &quot;Run&quot;,
-    &quot;Python.pub4.executor&quot;: &quot;Run&quot;,
-    &quot;Python.query.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;v8/develop&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.IDE.editor.colors.Rainbow Brackets&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.dkg_query.executor": "Run",
+    "Python.mainnet_node.executor": "Run",
+    "Python.marta.executor": "Run",
+    "Python.mock_data.executor": "Run",
+    "Python.mock_data_1_allow.executor": "Run",
+    "Python.mock_data_1_allow_MT.executor": "Run",
+    "Python.mock_data_MT_MW.executor": "Run",
+    "Python.mock_data_multithread.executor": "Run",
+    "Python.mock_data_multithread2.executor": "Run",
+    "Python.mtmw.executor": "Run",
+    "Python.mtmw2.executor": "Run",
+    "Python.mtmw3.executor": "Run",
+    "Python.node.executor": "Run",
+    "Python.node1.executor": "Run",
+    "Python.node2.executor": "Run",
+    "Python.node3.executor": "Run",
+    "Python.pub3.executor": "Run",
+    "Python.pub4.executor": "Run",
+    "Python.query.executor": "Run",
+    "Python.test.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "feature/update-paranets-functionality-to-v8",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors.Rainbow Brackets",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Python.pub3">
     <configuration name="mock_data_1_allow" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="dkgV8.py" />
@@ -191,11 +197,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.pub3" />
         <item itemvalue="Python.pub4" />
-        <item itemvalue="Python.mock_data_1_allow" />
+        <item itemvalue="Python.pub3" />
         <item itemvalue="Python.mtmw3" />
         <item itemvalue="Python.mtmw2" />
+        <item itemvalue="Python.mock_data_1_allow" />
       </list>
     </recent_temporary>
   </component>
@@ -420,7 +426,15 @@
       <option name="project" value="LOCAL" />
       <updated>1728609964268</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="changes">
+      <option name="closed" value="true" />
+      <created>1728611590886</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1728611590886</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
