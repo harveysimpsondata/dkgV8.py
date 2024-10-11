@@ -61,22 +61,14 @@ class MINERS_ACCESS_POLICY:
 # Create a persistent connection to the node
 class PersistentNodeHTTPProvider(NodeHTTPProvider):
     def __init__(self, node_url):
-        # Call the parent constructor
         super().__init__(node_url)
-
-        # Create a persistent session
         self.session = Session()
-
-        # Configure the session to retry and use keep-alive
         retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
         adapter = HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10)
-
-        # Mount the adapter for http(s)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
     def post(self, endpoint, data):
-        # Use the session to make a POST request
         url = f"{self.url}/{endpoint}"
         response = self.session.post(url, json=data)
         return response
@@ -161,71 +153,41 @@ def set_allowance(dkg, allowance_value):
 
 
 # Function to create and manage the Paranet
-def manage_paranet(dkg, paranet_ual):
-    # Add curated nodes
-    dkg.paranet.add_curated_nodes(paranet_ual, [1, 2, 3])
-    curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-    print("======================== ADDED NODES TO A CURATED PARANET")
-    #print_json(curated_nodes)
-
-    # Remove some curated nodes
-    # dkg.paranet.remove_curated_nodes(paranet_ual, [2, 3])
-    # curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-    # print("======================== REMOVED NODES FROM A CURATED PARANET")
-    # print_json(curated_nodes)
-
-    # Add curated miners
-    dkg.paranet.add_curated_miners(paranet_ual, [PUBLIC_KEY3, PUBLIC_KEY4, PUBLIC_KEY5])
-    miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-    print("======================== ADDED MINERS TO A CURATED PARANET")
-    print_json(miners)
-
-    # Remove curated miners
-    # dkg.paranet.remove_curated_miners(paranet_ual, [PUBLIC_KEY4, PUBLIC_KEY5])
-    # miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-    # print("======================== REMOVED MINERS FROM A CURATED PARANET")
-    # print_json(miners)
-
-# Function to upload knowledge assets using the DKG with allowance management and Paranet
-def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):
+def create_paranet_from_csv(df, private_key, allowance_value):
     try:
         # Create the DKG instance with the provided private key
         node_provider = PersistentNodeHTTPProvider(f"http://{node_hostname}:{node_port}")
         blockchain_provider = BlockchainProvider(
-            "testnet",
-            "base",
-            rpc_uri=rpc_uri,
-            private_key=private_key,
+            "testnet", "base", rpc_uri=rpc_uri, private_key=private_key
         )
         dkg = DKG(node_provider, blockchain_provider)
 
-        # Set the allowance (this will speed up subsequent asset publishing)
+        # Set the allowance
         set_allowance(dkg, allowance_value)
 
-        # Format the knowledge asset for the DKG
-        formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
-        print("======================== ASSET FORMATTED")
+        # Generate random knowledge asset data for Paranet
+        random_record = generate_random_record(df)
+        random_record['id'] = generate_unique_id(
+            random_record['first_name'],
+            random_record['last_name'],
+            random_record['email'],
+            random_record['gender'],
+            random_record['ip_address']
+        )
+        json_ld_data = create_json_ld(random_record)
 
-        # Create the asset after setting allowance
+        # Create the Knowledge Asset for the Paranet
         create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
-        print('************************ ASSET CREATED')
-        #print_json(create_asset_result)
+        print('************************ KNOWLEDGE ASSET FOR PARANET CREATED')
+        ka_ual = create_asset_result.get("UAL")
 
-        # Create a Paranet and link curated nodes/miners
-        paranet_ual = create_asset_result.get("UAL")
-        if paranet_ual:
+        # Create the Paranet using the Knowledge Asset's UAL
+        if ka_ual:
             create_paranet_result = dkg.paranet.create(
-                paranet_ual,
-                "ExampleParanet",
-                "Paranet Description",
-                NODES_ACCESS_POLICY.CURATED,
-                MINERS_ACCESS_POLICY.CURATED
+                ka_ual, "ExampleParanet", "Description of the Paranet", NODES_ACCESS_POLICY.CURATED, MINERS_ACCESS_POLICY.CURATED
             )
             print("======================== PARANET CREATED")
-            #print_json(create_paranet_result)
-
-            # Manage the Paranet: Add/remove nodes and miners
-            manage_paranet(dkg, paranet_ual)
+            paranet_ual = create_paranet_result["UAL"]
 
             # Optionally create and link a service to the Paranet
             paranet_service_data = {
@@ -240,7 +202,6 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
             paranet_service_ual = service_asset_result.get("UAL")
 
             if paranet_service_ual:
-                # Create the service within the Paranet using the created service UAL
                 create_paranet_service_result = dkg.paranet.create_service(
                     paranet_service_ual,
                     "ExampleParanetService",
@@ -248,18 +209,54 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
                     ["0x03C094044301E082468876634F0b209E11d98452"]
                 )
                 print("======================== PARANET SERVICE CREATED")
-                print_json(create_paranet_service_result)
-
-                # Add the service to the Paranet
                 dkg.paranet.add_services(paranet_ual, [paranet_service_ual])
                 print("======================== SERVICE LINKED TO PARANET")
 
-        if create_asset_result and create_asset_result.get("UAL"):
-            validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
-            print(f"Is {create_asset_result['UAL']} a valid UAL: {validate_ual}")
+            return paranet_ual  # Return the Paranet UAL for submitting Knowledge Assets
 
     except Exception as e:
-        print(f"Error creating asset: {e}")
+        print(f"Error creating Paranet: {e}")
+        return None
+
+
+# Function to create Knowledge Assets and submit them to an existing Paranet
+def create_and_submit_knowledge_assets_to_paranet(paranet_ual, num_assets, df, private_key, allowance_value):
+    try:
+        node_provider = PersistentNodeHTTPProvider(f"http://{node_hostname}:{node_port}")
+        blockchain_provider = BlockchainProvider(
+            "testnet", "base", rpc_uri=rpc_uri, private_key=private_key
+        )
+        dkg = DKG(node_provider, blockchain_provider)
+
+        # Set the allowance
+        set_allowance(dkg, allowance_value)
+
+        for _ in range(num_assets):
+            # Generate random knowledge asset data
+            random_record = generate_random_record(df)
+            random_record['id'] = generate_unique_id(
+                random_record['first_name'],
+                random_record['last_name'],
+                random_record['email'],
+                random_record['gender'],
+                random_record['ip_address']
+            )
+            json_ld_data = create_json_ld(random_record)
+
+            # Create the Knowledge Asset
+            create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
+            print('************************ KNOWLEDGE ASSET CREATED')
+            ka_ual = create_asset_result.get("UAL")
+
+            # Submit the Knowledge Asset to the Paranet
+            if ka_ual and paranet_ual:
+                submit_to_paranet_result = dkg.asset.submit_to_paranet(ka_ual, paranet_ual)
+                print(f"Knowledge Asset {ka_ual} submitted to Paranet {paranet_ual}")
+                print_json(submit_to_paranet_result)
+
+    except Exception as e:
+        print(f"Error submitting assets to Paranet: {e}")
+
 
 # Main execution
 if __name__ == '__main__':
@@ -269,39 +266,22 @@ if __name__ == '__main__':
     # Load all CSV files into a single DataFrame
     df = load_csv_files(folder_path)
 
-    # Set up threading for multithreaded execution
-    num_threads = 4  # Specify 4 threads explicitly
-    allowance_value = 1000000000000000000  # Set a large allowance to speed up publishing
+    num_ka_threads = 3  # Number of threads for Knowledge Assets
+    num_paranet_threads = 1  # One thread for Paranet
 
-    # Assign one private key to each thread
-    def assign_private_key_to_thread(thread_id, df):
-        private_key = private_keys[thread_id % len(private_keys)]
-        random_record = generate_random_record(df)
-        random_record['id'] = generate_unique_id(
-            random_record['first_name'],
-            random_record['last_name'],
-            random_record['email'],
-            random_record['gender'],
-            random_record['ip_address']
-        )
-        json_ld_data = create_json_ld(random_record)
-        upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value)
+    # Set up threading for Paranet and Knowledge Assets submission
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_ka_threads + num_paranet_threads) as executor:
+        # Thread for Paranet creation
+        paranet_future = executor.submit(create_paranet_from_csv, df, private_keys[0], 1000000000000000000)
 
-    # Thread pool executor for parallel uploads
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        while True:
+        # Once the Paranet is created, submit Knowledge Assets
+        paranet_ual = paranet_future.result()
+        if paranet_ual:
+            # Threads for submitting Knowledge Assets to the Paranet
             futures = []
-            # Submit a task for each thread, assigning a unique private key
-            for thread_id in range(num_threads):
-                futures.append(executor.submit(assign_private_key_to_thread, thread_id, df))
+            for i in range(num_ka_threads):
+                futures.append(executor.submit(create_and_submit_knowledge_assets_to_paranet, paranet_ual, 10, df, private_keys[i + 1], 1000000000000000000))
 
-            # Ensure all threads complete their tasks
+            # Wait for all Knowledge Asset submissions to complete
             for future in concurrent.futures.as_completed(futures):
-                try:
-                    result = future.result()
-                except Exception as exc:
-                    print(f"Generated an exception: {exc}")
-
-            # Wait for 0.01 second before running the next batch
-            print("Waiting 0.01 second before running the next batch...")
-            time.sleep(0.01)
+                future.result()
