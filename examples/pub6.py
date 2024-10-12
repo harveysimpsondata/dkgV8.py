@@ -16,16 +16,16 @@ from urllib3 import Retry
 load_dotenv()
 
 # Load environment variables
-node_hostname = os.getenv('NODE_HOSTNAME')
+node_hostname = os.getenv("NODE_HOSTNAME")
 node_port = os.getenv('NODE_PORT')
 rpc_uri = os.getenv('BASE_TESTNET_URI')
 
 # Load private keys (assign more private keys as needed)
 private_keys = [
-    os.getenv('PRIVATE_KEY_1'),
-    os.getenv('PRIVATE_KEY_2'),
-    os.getenv('PRIVATE_KEY_3'),
-    os.getenv('PRIVATE_KEY_4'),
+    # os.getenv('PRIVATE_KEY_1'),
+    # os.getenv('PRIVATE_KEY_2'),
+    # os.getenv('PRIVATE_KEY_3'),
+    # os.getenv('PRIVATE_KEY_4'),
     # os.getenv('PRIVATE_KEY_5'),
     # os.getenv('PRIVATE_KEY_6'),
     # os.getenv('PRIVATE_KEY_7'),
@@ -34,14 +34,14 @@ private_keys = [
     # os.getenv('PRIVATE_KEY_10'),
     # os.getenv('PRIVATE_KEY_11'),
     # os.getenv('PRIVATE_KEY_12'),
-    # os.getenv('PRIVATE_KEY_13'),
-    # os.getenv('PRIVATE_KEY_14'),
-    # os.getenv('PRIVATE_KEY_15'),
-    # os.getenv('PRIVATE_KEY_16'),
-    # os.getenv('PRIVATE_KEY_17'),
-    # os.getenv('PRIVATE_KEY_18'),
-    # os.getenv('PRIVATE_KEY_19'),
-    # os.getenv('PRIVATE_KEY_20')
+    os.getenv('PRIVATE_KEY_13'),
+    os.getenv('PRIVATE_KEY_14'),
+    os.getenv('PRIVATE_KEY_15'),
+    os.getenv('PRIVATE_KEY_16'),
+    os.getenv('PRIVATE_KEY_17'),
+    os.getenv('PRIVATE_KEY_18'),
+    os.getenv('PRIVATE_KEY_19'),
+    os.getenv('PRIVATE_KEY_20')
 ]
 
 # Create a persistent connection to the node
@@ -54,8 +54,8 @@ class PersistentNodeHTTPProvider(NodeHTTPProvider):
         self.session = Session()
 
         # Configure the session to retry and use keep-alive
-        retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
-        adapter = HTTPAdapter(max_retries=retries, pool_connections=100, pool_maxsize=100)
+        retries = Retry(total=5, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retries, pool_connections=200, pool_maxsize=200)
 
         # Mount the adapter for http(s)
         self.session.mount("http://", adapter)
@@ -120,13 +120,42 @@ def create_json_ld(record):
     }
     return json_ld_data
 
-# Function to set the allowance before creating multiple assets
-def set_allowance(dkg, allowance_value):
+# Function to ensure allowance is set
+# Function to ensure allowance is set
+# Global cache for allowances
+allowance_cache = {}
+
+
+# Function to ensure allowance is set
+def ensure_allowance(dkg, private_key, required_allowance):
+    try:
+        # Check the cache first to avoid unnecessary calls
+        if private_key in allowance_cache and allowance_cache[private_key] >= required_allowance:
+            print(f"Cached allowance is sufficient: {allowance_cache[private_key]}")
+            return
+
+        # Get the current allowance from the DKG
+        current_allowance = dkg.asset.get_current_allowance()
+        allowance_cache[private_key] = current_allowance  # Update cache with the current value
+
+        # Only set allowance if it's below the required amount
+        if current_allowance < required_allowance:
+            set_allowance(dkg, private_key, required_allowance)
+        else:
+            print(f"Allowance is already sufficient: {current_allowance}")
+    except Exception as e:
+        print(f"Error checking or setting allowance: {e}")
+
+
+# Function to set the allowance
+def set_allowance(dkg, private_key, allowance_value):
     try:
         dkg.asset.set_allowance(allowance_value)
-        print(f"======================== ALLOWANCE SET TO {allowance_value}")
+        allowance_cache[private_key] = allowance_value  # Update the cache after setting the allowance
+        print(f"======================== ALLOWANCE SET TO {allowance_value} for {private_key}")
     except Exception as e:
         print(f"Error setting allowance: {e}")
+
 
 # Function to upload knowledge assets using the DKG with allowance management
 def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):
@@ -141,8 +170,8 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
         )
         dkg = DKG(node_provider, blockchain_provider)
 
-        # Set the allowance (this will speed up subsequent asset publishing)
-        set_allowance(dkg, allowance_value)
+        # Ensure allowance is set
+        ensure_allowance(dkg, private_key, allowance_value)
 
         # Format the knowledge asset for the DKG
         formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
@@ -151,7 +180,7 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
         # Create the asset after setting allowance
         create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
         print('************************ ASSET CREATED')
-        #print(create_asset_result)
+        # print(create_asset_result)
 
         if create_asset_result and create_asset_result.get("UAL"):
             validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
@@ -169,7 +198,7 @@ if __name__ == '__main__':
     df = load_csv_files(folder_path)
 
     # Set up threading for multithreaded execution
-    num_threads = 4  # Specify 4 threads explicitly
+    num_threads = 8  # Specify 4 threads explicitly
     allowance_value = 1000000000000000000  # Set a large allowance to speed up publishing
 
     # Assign one private key to each thread
@@ -203,4 +232,4 @@ if __name__ == '__main__':
 
             # Wait for 0.01 second before running the next batch
             print("Waiting 0.01 second before running the next batch...")
-            time.sleep(0.01)
+            time.sleep(2)

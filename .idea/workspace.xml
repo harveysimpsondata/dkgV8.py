@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes" />
+    <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes">
+      <change afterPath="$PROJECT_DIR$/examples/pub6.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub5.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/pub5.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -36,6 +40,7 @@
   &quot;associatedIndex&quot;: 3
 }</component>
   <component name="ProjectId" id="2mzjqwiaf4yUYBqFRwaOcmgr8H9" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -63,6 +68,7 @@
     &quot;Python.query.executor&quot;: &quot;Run&quot;,
     &quot;Python.test.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;v8/develop&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -202,8 +208,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-b86d7ee83eed-JavaScript-PY-243.18137.19" />
-        <option value="bundled-python-sdk-c9ea1d2668a5-10a76b3686da-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.18137.19" />
+        <option value="bundled-js-predefined-d6986cc7102b-b86d7ee83eed-JavaScript-PY-243.19420.35" />
+        <option value="bundled-python-sdk-665a85da0b8b-10a76b3686da-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.19420.35" />
       </set>
     </attachedChunks>
   </component>
@@ -227,6 +233,8 @@
       <workItem from="1728414389622" duration="4221000" />
       <workItem from="1728487378065" duration="8791000" />
       <workItem from="1728513320223" duration="18508000" />
+      <workItem from="1728674382795" duration="3850000" />
+      <workItem from="1728746576223" duration="8200000" />
     </task>
     <task id="LOCAL-00001" summary="changes">
       <option name="closed" value="true" />
