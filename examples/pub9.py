@@ -16,7 +16,7 @@ from urllib3 import Retry
 load_dotenv()
 
 # Load environment variables
-node_hostname = "localhost"
+node_hostname = os.getenv("NODE_HOSTNAME")
 node_port = os.getenv('NODE_PORT')
 rpc_uri = os.getenv('BASE_TESTNET_URI')
 
@@ -47,22 +47,14 @@ private_keys = [
 # Create a persistent connection to the node
 class PersistentNodeHTTPProvider(NodeHTTPProvider):
     def __init__(self, node_url):
-        # Call the parent constructor
         super().__init__(node_url)
-
-        # Create a persistent session
         self.session = Session()
-
-        # Configure the session to retry and use keep-alive
         retries = Retry(total=5, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
         adapter = HTTPAdapter(max_retries=retries, pool_connections=200, pool_maxsize=200)
-
-        # Mount the adapter for http(s)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
     def post(self, endpoint, data):
-        # Use the session to make a POST request
         url = f"{self.url}/{endpoint}"
         response = self.session.post(url, json=data)
         return response
@@ -77,7 +69,7 @@ def load_csv_files(folder_path):
 # Function to generate a unique ID based on selected values
 def generate_unique_id(first_name, last_name, email, gender, ip_address):
     random_string = f"{first_name}_{last_name}_{email}_{gender}_{ip_address}"
-    unique_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))  # Generate UUID5 based on DNS namespace
+    unique_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))
     return unique_id
 
 # Function to randomly select values from each column
@@ -87,7 +79,6 @@ def generate_random_record(df):
     email = random.choice(df['email'].dropna().tolist())
     gender = random.choice(df['gender'].dropna().tolist())
     ip_address = random.choice(df['ip_address'].dropna().tolist())
-
     return {
         "first_name": first_name,
         "last_name": last_name,
@@ -120,25 +111,19 @@ def create_json_ld(record):
     }
     return json_ld_data
 
-# Function to ensure allowance is set
-# Function to ensure allowance is set
 # Global cache for allowances
 allowance_cache = {}
-
 
 # Function to ensure allowance is set
 def ensure_allowance(dkg, private_key, required_allowance):
     try:
-        # Check the cache first to avoid unnecessary calls
         if private_key in allowance_cache and allowance_cache[private_key] >= required_allowance:
             print(f"Cached allowance is sufficient: {allowance_cache[private_key]}")
             return
 
-        # Get the current allowance from the DKG
         current_allowance = dkg.asset.get_current_allowance()
-        allowance_cache[private_key] = current_allowance  # Update cache with the current value
+        allowance_cache[private_key] = current_allowance
 
-        # Only set allowance if it's below the required amount
         if current_allowance < required_allowance:
             set_allowance(dkg, private_key, required_allowance)
         else:
@@ -146,21 +131,18 @@ def ensure_allowance(dkg, private_key, required_allowance):
     except Exception as e:
         print(f"Error checking or setting allowance: {e}")
 
-
 # Function to set the allowance
 def set_allowance(dkg, private_key, allowance_value):
     try:
         dkg.asset.set_allowance(allowance_value)
-        allowance_cache[private_key] = allowance_value  # Update the cache after setting the allowance
+        allowance_cache[private_key] = allowance_value
         print(f"======================== ALLOWANCE SET TO {allowance_value} for {private_key}")
     except Exception as e:
         print(f"Error setting allowance: {e}")
 
-
 # Function to upload knowledge assets using the DKG with allowance management
 def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):
     try:
-        # Create the DKG instance with the provided private key
         node_provider = PersistentNodeHTTPProvider(f"http://{node_hostname}:{node_port}")
         blockchain_provider = BlockchainProvider(
             "testnet",
@@ -170,17 +152,16 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
         )
         dkg = DKG(node_provider, blockchain_provider)
 
-        # Ensure allowance is set
         ensure_allowance(dkg, private_key, allowance_value)
 
-        # Format the knowledge asset for the DKG
         formatted_assertions = dkg.assertion.format_graph({"public": json_ld_data})
         print("======================== ASSET FORMATTED")
 
-        # Create the asset after setting allowance
+        # Add a slight delay before publishing to avoid timeout issues
+        time.sleep(0.4)
+
         create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
         print('************************ ASSET CREATED')
-        # print(create_asset_result)
 
         if create_asset_result and create_asset_result.get("UAL"):
             validate_ual = dkg.asset.is_valid_ual(create_asset_result["UAL"])
@@ -191,17 +172,12 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
 
 # Main execution
 if __name__ == '__main__':
-    # Path to the folder containing the CSV files
-    folder_path = '../mock_data'
-
-    # Load all CSV files into a single DataFrame
+    folder_path = '/Users/leesimpson/mock_data'
     df = load_csv_files(folder_path)
 
-    # Set up threading for multithreaded execution
-    num_threads = 4  # Specify 4 threads explicitly
-    allowance_value = 1000000000000000000  # Set a large allowance to speed up publishing
+    num_threads = 4
+    allowance_value = 1000000000000000000
 
-    # Assign one private key to each thread
     def assign_private_key_to_thread(thread_id, df):
         private_key = private_keys[thread_id % len(private_keys)]
         random_record = generate_random_record(df)
@@ -215,21 +191,17 @@ if __name__ == '__main__':
         json_ld_data = create_json_ld(random_record)
         upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value)
 
-    # Thread pool executor for parallel uploads
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
         while True:
             futures = []
-            # Submit a task for each thread, assigning a unique private key
             for thread_id in range(num_threads):
                 futures.append(executor.submit(assign_private_key_to_thread, thread_id, df))
 
-            # Ensure all threads complete their tasks
             for future in concurrent.futures.as_completed(futures):
                 try:
                     result = future.result()
                 except Exception as exc:
                     print(f"Generated an exception: {exc}")
 
-            # Wait for 0.01 second before running the next batch
-            print("Waiting 0.01 second before running the next batch...")
+            print("Waiting 2 second before running the next batch...")
             time.sleep(2)
