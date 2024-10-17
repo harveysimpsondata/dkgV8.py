@@ -70,7 +70,7 @@ class BlockchainRequest:
     allowance = ContractCall(
         contract="Token",
         function="allowance",
-        args={"owner": Address, "spender": Address}
+        args={"owner": Address, "spender": Address},
     )
     increase_allowance = ContractTransaction(
         contract="Token",
@@ -148,6 +148,13 @@ class BlockchainRequest:
         args={"assertionId": bytes | HexStr},
     )
 
+    # Identity
+    get_identity_id = ContractCall(
+        contract="IdentityStorage",
+        function="getIdentityId",
+        args={"operational": Address},
+    )
+
     # Paranets
     register_paranet = ContractTransaction(
         contract="Paranet",
@@ -168,7 +175,7 @@ class BlockchainRequest:
         args={
             "paranetKAStorageContract": Address,
             "paranetKATokenId": int,
-            "identityIds": list[int]
+            "identityIds": list[int],
         },
     )
 
@@ -178,7 +185,7 @@ class BlockchainRequest:
         args={
             "paranetKAStorageContract": Address,
             "paranetKATokenId": int,
-            "identityIds": list[int]
+            "identityIds": list[int],
         },
     )
 
@@ -214,7 +221,7 @@ class BlockchainRequest:
     get_curated_nodes = ContractCall(
         contract="ParanetsRegistry",
         function="getCuratedNodes",
-        args={ "paranetId": HexStr },
+        args={"paranetId": HexStr},
     )
 
     add_paranet_curated_miners = ContractTransaction(
@@ -223,7 +230,7 @@ class BlockchainRequest:
         args={
             "paranetKAStorageContract": Address,
             "paranetKATokenId": int,
-            "minerAddresses": list[Address]
+            "minerAddresses": list[Address],
         },
     )
 
@@ -233,7 +240,7 @@ class BlockchainRequest:
         args={
             "paranetKAStorageContract": Address,
             "paranetKATokenId": int,
-            "minerAddresses": list[Address]
+            "minerAddresses": list[Address],
         },
     )
 
@@ -269,7 +276,7 @@ class BlockchainRequest:
     get_knowledge_miners = ContractCall(
         contract="ParanetsRegistry",
         function="getKnowledgeMiners",
-        args={ "paranetId": HexStr },
+        args={"paranetId": HexStr},
     )
 
     add_paranet_services = ContractTransaction(

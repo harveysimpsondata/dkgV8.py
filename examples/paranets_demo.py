@@ -16,12 +16,12 @@
 # under the License.
 
 import json
-import time
 
 from hexbytes import HexBytes
 
 from dkg import DKG
 from dkg.providers import BlockchainProvider, NodeHTTPProvider
+from dkg.dataclasses import ParanetNodesAccessPolicy, ParanetMinersAccessPolicy
 
 node_provider = NodeHTTPProvider("http://localhost:8900")
 blockchain_provider = BlockchainProvider(
@@ -31,15 +31,6 @@ blockchain_provider = BlockchainProvider(
 )
 
 dkg = DKG(node_provider, blockchain_provider)
-
-class NODES_ACCESS_POLICY:
-    OPEN: int = 0
-    CURATED: int = 1
-
-class MINERS_ACCESS_POLICY:
-    OPEN: int = 0
-    CURATED: int = 1
-
 
 def divider():
     print("==================================================")
@@ -54,7 +45,7 @@ def print_json(json_dict: dict):
         elif isinstance(data, list):
             return [convert_hexbytes(i) for i in data]
         elif isinstance(data, HexBytes):
-            return data.hex()
+            return data.to_0x_hex()
         else:
             return data
 
@@ -85,8 +76,8 @@ create_paranet_result = dkg.paranet.create(
     paranet_ual,
     "TestParanet",
     "TestParanetDescription",
-    NODES_ACCESS_POLICY.OPEN,
-    MINERS_ACCESS_POLICY.OPEN
+    ParanetNodesAccessPolicy.OPEN,
+    ParanetMinersAccessPolicy.OPEN
 )
 
 print("======================== PARANET CREATED")
