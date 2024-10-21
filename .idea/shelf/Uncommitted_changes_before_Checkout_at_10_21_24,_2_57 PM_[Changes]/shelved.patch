@@ -1,0 +1,769 @@
+Index: examples/backlog.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\nimport pandas as pd\nimport random\nimport json\nfrom dkg import DKG\nfrom dkg.providers import BlockchainProvider, NodeHTTPProvider\nfrom dotenv import load_dotenv\nimport uuid\nimport time\nimport concurrent.futures\nfrom web3 import Web3\n\n# Load environment variables (assuming you have .env with blockchain details)\nload_dotenv()\n\n# Load environment variables\nnode_hostname = \"localhost\"\nnode_port = os.getenv('NODE_PORT')\nrpc_uri = os.getenv('BASE_TESTNET_URI')\n\n# Web3 setup\nweb3 = Web3(Web3.HTTPProvider(\"https://sepolia.base.org\"))\n\n# Load private keys (for parallel processing)\nprivate_keys = [\n    # os.getenv('PRIVATE_KEY_1'),\n    # os.getenv('PRIVATE_KEY_2'),\n    # os.getenv('PRIVATE_KEY_3'),\n    # os.getenv('PRIVATE_KEY_4'),\n    # os.getenv('PRIVATE_KEY_5'),\n    # os.getenv('PRIVATE_KEY_6'),\n    # os.getenv('PRIVATE_KEY_7'),\n    # os.getenv('PRIVATE_KEY_8'),\n    # os.getenv('PRIVATE_KEY_9'),\n    # os.getenv('PRIVATE_KEY_10'),\n    # os.getenv('PRIVATE_KEY_11'),\n    # os.getenv('PRIVATE_KEY_12'),\n    # os.getenv('PRIVATE_KEY_13'),\n    # os.getenv('PRIVATE_KEY_14'),\n    # os.getenv('PRIVATE_KEY_15'),\n    # os.getenv('PRIVATE_KEY_16'),\n    # os.getenv('PRIVATE_KEY_17'),\n    # os.getenv('PRIVATE_KEY_18'),\n    # os.getenv('PRIVATE_KEY_19'),\n    # os.getenv('PRIVATE_KEY_20'),\n    # os.getenv('PRIVATE_KEY_21'),\n    # os.getenv('PRIVATE_KEY_22'),\n    # os.getenv('PRIVATE_KEY_23'),\n    # os.getenv('PRIVATE_KEY_24'),\n    # os.getenv('PRIVATE_KEY_25'),\n    # os.getenv('PRIVATE_KEY_26'),\n    os.getenv('PRIVATE_KEY_27'),\n    os.getenv('PRIVATE_KEY_28'),\n    os.getenv('PRIVATE_KEY_29'),\n    os.getenv('PRIVATE_KEY_30'),\n    os.getenv('PRIVATE_KEY_31'),\n    os.getenv('PRIVATE_KEY_32'),\n    os.getenv(\"PRIVATE_KEY_33\"),\n    os.getenv(\"PRIVATE_KEY_34\"),\n    os.getenv(\"PRIVATE_KEY_35\"),\n    os.getenv(\"PRIVATE_KEY_36\"),\n    os.getenv(\"PRIVATE_KEY_37\"),\n    os.getenv(\"PRIVATE_KEY_38\"),\n    os.getenv(\"PRIVATE_KEY_39\"),\n    os.getenv(\"PRIVATE_KEY_40\"),\n    os.getenv(\"PRIVATE_KEY_41\"),\n    os.getenv(\"PRIVATE_KEY_42\"),\n    os.getenv(\"PRIVATE_KEY_43\"),\n    os.getenv(\"PRIVATE_KEY_44\"),\n    os.getenv(\"PRIVATE_KEY_45\"),\n    os.getenv(\"PRIVATE_KEY_46\"),\n    os.getenv(\"PRIVATE_KEY_47\"),\n    os.getenv(\"PRIVATE_KEY_48\"),\n    os.getenv(\"PRIVATE_KEY_49\"),\n    os.getenv(\"PRIVATE_KEY_50\"),\n]\n\n# Generate a unique ID\ndef generate_unique_id(email, ip_address):\n    random_string = f\"{email}_{ip_address}\"\n    return str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))\n\n# Randomly select values from each column\ndef generate_random_record(df):\n    email = random.choice(df['email'].dropna().tolist())\n    ip_address = random.choice(df['ip_address'].dropna().tolist())\n    return {\n        \"email\": email,\n        \"ip_address\": ip_address\n    }\n\n# Load CSV files into a single DataFrame\ndef load_csv_files(folder_path):\n    csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]\n    dataframes = [pd.read_csv(os.path.join(folder_path, csv_file)) for csv_file in csv_files]\n    combined_df = pd.concat(dataframes, ignore_index=True)\n    return combined_df\n\ndef create_json_ld(record):\n    return {\n        \"@context\": {\n            \"@vocab\": \"http://schema.org/\",\n            \"id\": \"http://schema.org/identifier\",\n            \"email\": \"http://schema.org/email\",\n            \"ip_address\": \"http://schema.org/IPAddress\"\n        },\n        \"@graph\": [{\n            \"@type\": \"Person\",\n            \"id\": str(record['id']),\n            \"email\": record['email'],\n            \"ip_address\": record['ip_address']\n        }]\n    }\n\n# Global cache for allowances\nallowance_cache = {}\n\n# Function to ensure allowance is set\ndef ensure_allowance(dkg, private_key, required_allowance):\n    try:\n        if private_key in allowance_cache and allowance_cache[private_key] >= required_allowance:\n            print(f\"Cached allowance is sufficient: {allowance_cache[private_key]}\")\n            return\n\n        current_allowance = dkg.asset.get_current_allowance()\n        allowance_cache[private_key] = current_allowance\n\n        if current_allowance < required_allowance:\n            set_allowance(dkg, private_key, required_allowance)\n        else:\n            print(f\"Allowance is already sufficient: {current_allowance}\")\n    except Exception as e:\n        print(f\"Error checking or setting allowance: {e}\")\n\n# Function to set the allowance\ndef set_allowance(dkg, private_key, allowance_value):\n    try:\n        dkg.asset.set_allowance(allowance_value)\n        allowance_cache[private_key] = allowance_value\n        print(f\"======================== ALLOWANCE SET TO {allowance_value} for {private_key}\")\n    except Exception as e:\n        print(f\"Error setting allowance: {e}\")\n\n# Function to handle nonce too low issues and retry the transaction\ndef send_new_transaction(public_key, private_key):\n    try:\n        nonce = web3.eth.get_transaction_count(public_key, 'latest')\n        gas_price = web3.eth.gas_price\n        estimated_gas = web3.eth.estimate_gas({\n            'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',  # Random address to send a tiny amount\n            'from': public_key,\n            'value': web3.to_wei(0.0001, 'ether')\n        })\n\n        multiplier = 1.2  # Start with 1.2x the current gas price\n\n        while True:\n            try:\n                # Create the new transaction with the dynamic gas price\n                transaction = {\n                    'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',\n                    'value': web3.to_wei(0.0001, 'ether'),\n                    'gas': estimated_gas,\n                    'gasPrice': int(gas_price * multiplier),\n                    'nonce': nonce\n                }\n\n                # Sign and send the transaction\n                signed_txn = web3.eth.account.sign_transaction(transaction, private_key)\n                txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)\n                print(f\"Replacement transaction sent with hash: {web3.to_hex(txn_hash)}\")\n                break  # Exit the loop on success\n\n            except Exception as e:\n                if \"replacement transaction underpriced\" in str(e):\n                    print(f\"Transaction failed with underpriced error. Increasing gas price by 20%. Error: {str(e)}\")\n                    multiplier += 0.2  # Increase gas price by 20%\n                    time.sleep(3)  # Wait for 2 seconds before retrying\n                else:\n                    print(f\"Failed to send replacement transaction: {str(e)}\")\n                    break  # Exit loop if it's not a gas price issue\n\n    except Exception as e:\n        print(f\"Failed to initiate transaction: {str(e)}\")\n\n# Function to upload knowledge assets using the DKG with nonce handling and transaction retry\ndef upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):\n    try:\n        node_provider = NodeHTTPProvider(f\"http://{node_hostname}:{node_port}\")\n        blockchain_provider = BlockchainProvider(\n            \"testnet\",\n            \"base\",\n            rpc_uri=rpc_uri,\n            private_key=private_key,\n        )\n        dkg = DKG(node_provider, blockchain_provider)\n\n        # Get public key from private key\n        public_key = web3.eth.account.from_key(private_key).address\n\n        # Ensure the allowance is set before uploading\n        ensure_allowance(dkg, private_key, allowance_value)\n\n        # Retry logic for nonce too low errors\n        retry_count = 0\n        max_retries = 5\n\n        while retry_count < max_retries:\n            try:\n                # Try creating the asset\n                create_asset_result = dkg.asset.create({\"public\": json_ld_data}, 1)\n                if create_asset_result:\n\n                    print(f\"********************** * * * * * * * * ASSET CREATED * * * * * * * ***********************\")\n                    return create_asset_result\n                break  # Exit loop on success\n\n            except Exception as e:\n                if \"nonce too low\" in str(e):\n                    print(f\"Error creating asset: {e}. Retrying with updated nonce.\")\n                    nonce = web3.eth.get_transaction_count(public_key, 'pending')\n                    send_new_transaction(public_key, private_key)\n                    retry_count += 1\n                    time.sleep(3)  # Wait before retrying\n                else:\n                    print(f\"Error creating asset: {e}\")\n                    break  # Exit loop if it's not a nonce issue\n\n        if retry_count == max_retries:\n            print(f\"Max retries reached for nonce handling. Asset creation failed.\")\n\n    except Exception as e:\n        print(f\"Unexpected error: {e}\")\n\n# Main execution\nif __name__ == '__main__':\n    # Path to the folder containing the CSV files\n    folder_path = '../mock_data'\n\n    # Load all CSV files into a single DataFrame\n    df = load_csv_files(folder_path)\n\n    # Set the required allowance value\n    allowance_value = 10000000000000000000  # 10 Ether equivalent (adjust as needed)\n\n    # Set up a large pool of threads, with more workers than private keys to process them concurrently\n    max_threads = 24  # Number of maximum concurrent threads\n\n    # Thread pool executor for parallel uploads\n    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:\n        futures = []\n        # Loop through private keys and create assets for each\n        for _ in range(5000):  # Create 5000 knowledge assets\n            # Generate a random record from the DataFrame\n            random_record = generate_random_record(df)\n\n            # Generate a unique ID for the selected record\n            random_record['id'] = generate_unique_id(\n                random_record['email'],\n                random_record['ip_address'],\n            )\n\n            # Create JSON-LD data\n            json_ld_data = create_json_ld(random_record)\n\n            # Use alternating private keys for parallel uploads\n            private_key = private_keys[_ % len(private_keys)]\n\n            # Submit the task to the executor for parallel execution\n            futures.append(executor.submit(upload_knowledge_asset_with_increase, json_ld_data, private_key, allowance_value))\n\n            # Throttle the task submission rate to prevent overloading the node\n            time.sleep(0.1)  # Delay of 0.05 seconds between task submissions\n\n        # Ensure all threads complete their tasks\n        for future in concurrent.futures.as_completed(futures):\n            try:\n                result = future.result()\n            except Exception as exc:\n                print(f\"Generated an exception: {exc}\")\n\n        print(\"All assets created.\")\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/backlog.py b/examples/backlog.py
+--- a/examples/backlog.py	(revision 7225fa9dbb7c42e0d2d15046b0b1c5fb08e6cddd)
++++ b/examples/backlog.py	(date 1729536985310)
+@@ -14,7 +14,7 @@
+ load_dotenv()
+ 
+ # Load environment variables
+-node_hostname = "localhost"
++node_hostname = os.getenv("NODE_HOSTNAME")
+ node_port = os.getenv('NODE_PORT')
+ rpc_uri = os.getenv('BASE_TESTNET_URI')
+ 
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"Black\">\n    <option name=\"sdkName\" value=\"Python 3.11 virtualenv at ~/PycharmProjects/dkgV8.py/.venv\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 7225fa9dbb7c42e0d2d15046b0b1c5fb08e6cddd)
++++ b/.idea/misc.xml	(date 1729355268917)
+@@ -3,4 +3,5 @@
+   <component name="Black">
+     <option name="sdkName" value="Python 3.11 virtualenv at ~/PycharmProjects/dkgV8.py/.venv" />
+   </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 virtualenv at ~/PycharmProjects/dkgV8.py/.venv" project-jdk-type="Python SDK" />
+ </project>
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"4d13cafe-aac5-441e-b5a4-15d6aae2ce8f\" name=\"Changes\" comment=\"changes\" />\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"Python Script\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;harveysimpsondata&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/harveysimpsondata/dkgV8.py.git&quot;,\n    &quot;accountId&quot;: &quot;97fde37a-0384-4e95-bb77-1ad33bd61544&quot;\n  }\n}</component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 3\n}</component>\n  <component name=\"ProjectId\" id=\"2mzjqwiaf4yUYBqFRwaOcmgr8H9\" />\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"Python.dkg_query.executor\": \"Run\",\n    \"Python.mainnet_node.executor\": \"Run\",\n    \"Python.marta.executor\": \"Run\",\n    \"Python.mock_data.executor\": \"Run\",\n    \"Python.mock_data_1_allow.executor\": \"Run\",\n    \"Python.mock_data_1_allow_MT.executor\": \"Run\",\n    \"Python.mock_data_MT_MW.executor\": \"Run\",\n    \"Python.mock_data_multithread.executor\": \"Run\",\n    \"Python.mock_data_multithread2.executor\": \"Run\",\n    \"Python.mtmw.executor\": \"Run\",\n    \"Python.mtmw2.executor\": \"Run\",\n    \"Python.mtmw3.executor\": \"Run\",\n    \"Python.node.executor\": \"Run\",\n    \"Python.node1.executor\": \"Run\",\n    \"Python.node2.executor\": \"Run\",\n    \"Python.node3.executor\": \"Run\",\n    \"Python.pub3.executor\": \"Run\",\n    \"Python.pub4.executor\": \"Run\",\n    \"Python.query.executor\": \"Run\",\n    \"Python.test.executor\": \"Run\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"RunOnceActivity.git.unshallow\": \"true\",\n    \"git-widget-placeholder\": \"feature/update-paranets-functionality-to-v8\",\n    \"node.js.detected.package.eslint\": \"true\",\n    \"node.js.detected.package.tslint\": \"true\",\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\n    \"nodejs_package_manager_path\": \"npm\",\n    \"settings.editor.selected.configurable\": \"reference.settingsdialog.IDE.editor.colors.Rainbow Brackets\",\n    \"vue.rearranger.settings.migration\": \"true\"\n  }\n}]]></component>\n  <component name=\"RunManager\" selected=\"Python.pub3\">\n    <configuration name=\"mock_data_1_allow\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"dkgV8.py\" />\n      <option name=\"ENV_FILES\" value=\"\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/examples\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/examples/mock_data_1_allow.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"mtmw2\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"dkgV8.py\" />\n      <option name=\"ENV_FILES\" value=\"\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/examples\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/examples/mtmw2.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"mtmw3\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"dkgV8.py\" />\n      <option name=\"ENV_FILES\" value=\"\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/examples\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/examples/mtmw3.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"pub3\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"dkgV8.py\" />\n      <option name=\"ENV_FILES\" value=\"\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/examples\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/examples/pub3.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"pub4\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <module name=\"dkgV8.py\" />\n      <option name=\"ENV_FILES\" value=\"\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/examples\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/examples/pub4.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <recent_temporary>\n      <list>\n        <item itemvalue=\"Python.pub3\" />\n        <item itemvalue=\"Python.pub4\" />\n        <item itemvalue=\"Python.mock_data_1_allow\" />\n        <item itemvalue=\"Python.mtmw3\" />\n        <item itemvalue=\"Python.mtmw2\" />\n      </list>\n    </recent_temporary>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-js-predefined-d6986cc7102b-b86d7ee83eed-JavaScript-PY-243.19420.35\" />\n        <option value=\"bundled-python-sdk-665a85da0b8b-10a76b3686da-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.19420.35\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"4d13cafe-aac5-441e-b5a4-15d6aae2ce8f\" name=\"Changes\" comment=\"\" />\n      <created>1728086494030</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1728086494030</updated>\n      <workItem from=\"1728086498550\" duration=\"77000\" />\n      <workItem from=\"1728086587302\" duration=\"62000\" />\n      <workItem from=\"1728086755579\" duration=\"826000\" />\n      <workItem from=\"1728087806294\" duration=\"3939000\" />\n      <workItem from=\"1728154564006\" duration=\"717000\" />\n      <workItem from=\"1728156246735\" duration=\"4950000\" />\n      <workItem from=\"1728239831262\" duration=\"22398000\" />\n      <workItem from=\"1728298696456\" duration=\"15728000\" />\n      <workItem from=\"1728407866863\" duration=\"11435000\" />\n      <workItem from=\"1728414389622\" duration=\"4221000\" />\n      <workItem from=\"1728487378065\" duration=\"8791000\" />\n      <workItem from=\"1728513320223\" duration=\"18508000\" />\n      <workItem from=\"1728674382795\" duration=\"3850000\" />\n      <workItem from=\"1728746576223\" duration=\"25341000\" />\n    </task>\n    <task id=\"LOCAL-00001\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728095090074</created>\n      <option name=\"number\" value=\"00001\" />\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728095090074</updated>\n    </task>\n    <task id=\"LOCAL-00002\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728273507264</created>\n      <option name=\"number\" value=\"00002\" />\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728273507264</updated>\n    </task>\n    <task id=\"LOCAL-00003\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728273564805</created>\n      <option name=\"number\" value=\"00003\" />\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728273564805</updated>\n    </task>\n    <task id=\"LOCAL-00004\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728274021522</created>\n      <option name=\"number\" value=\"00004\" />\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728274021522</updated>\n    </task>\n    <task id=\"LOCAL-00005\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728276841672</created>\n      <option name=\"number\" value=\"00005\" />\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728276841672</updated>\n    </task>\n    <task id=\"LOCAL-00006\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728301548060</created>\n      <option name=\"number\" value=\"00006\" />\n      <option name=\"presentableId\" value=\"LOCAL-00006\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728301548060</updated>\n    </task>\n    <task id=\"LOCAL-00007\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728314298472</created>\n      <option name=\"number\" value=\"00007\" />\n      <option name=\"presentableId\" value=\"LOCAL-00007\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728314298472</updated>\n    </task>\n    <task id=\"LOCAL-00008\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728325236869</created>\n      <option name=\"number\" value=\"00008\" />\n      <option name=\"presentableId\" value=\"LOCAL-00008\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728325236869</updated>\n    </task>\n    <task id=\"LOCAL-00009\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728392526192</created>\n      <option name=\"number\" value=\"00009\" />\n      <option name=\"presentableId\" value=\"LOCAL-00009\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728392526192</updated>\n    </task>\n    <task id=\"LOCAL-00010\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728397616557</created>\n      <option name=\"number\" value=\"00010\" />\n      <option name=\"presentableId\" value=\"LOCAL-00010\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728397616557</updated>\n    </task>\n    <task id=\"LOCAL-00011\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728397632040</created>\n      <option name=\"number\" value=\"00011\" />\n      <option name=\"presentableId\" value=\"LOCAL-00011\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728397632040</updated>\n    </task>\n    <task id=\"LOCAL-00012\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728416422667</created>\n      <option name=\"number\" value=\"00012\" />\n      <option name=\"presentableId\" value=\"LOCAL-00012\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728416422667</updated>\n    </task>\n    <task id=\"LOCAL-00013\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728419243517</created>\n      <option name=\"number\" value=\"00013\" />\n      <option name=\"presentableId\" value=\"LOCAL-00013\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728419243517</updated>\n    </task>\n    <task id=\"LOCAL-00014\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728451858985</created>\n      <option name=\"number\" value=\"00014\" />\n      <option name=\"presentableId\" value=\"LOCAL-00014\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728451858985</updated>\n    </task>\n    <task id=\"LOCAL-00015\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728488926351</created>\n      <option name=\"number\" value=\"00015\" />\n      <option name=\"presentableId\" value=\"LOCAL-00015\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728488926351</updated>\n    </task>\n    <task id=\"LOCAL-00016\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728501735701</created>\n      <option name=\"number\" value=\"00016\" />\n      <option name=\"presentableId\" value=\"LOCAL-00016\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728501735701</updated>\n    </task>\n    <task id=\"LOCAL-00017\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728504612825</created>\n      <option name=\"number\" value=\"00017\" />\n      <option name=\"presentableId\" value=\"LOCAL-00017\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728504612825</updated>\n    </task>\n    <task id=\"LOCAL-00018\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728509174211</created>\n      <option name=\"number\" value=\"00018\" />\n      <option name=\"presentableId\" value=\"LOCAL-00018\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728509174211</updated>\n    </task>\n    <task id=\"LOCAL-00019\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728509683461</created>\n      <option name=\"number\" value=\"00019\" />\n      <option name=\"presentableId\" value=\"LOCAL-00019\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728509683461</updated>\n    </task>\n    <task id=\"LOCAL-00020\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728574510533</created>\n      <option name=\"number\" value=\"00020\" />\n      <option name=\"presentableId\" value=\"LOCAL-00020\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728574510533</updated>\n    </task>\n    <task id=\"LOCAL-00021\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728580332116</created>\n      <option name=\"number\" value=\"00021\" />\n      <option name=\"presentableId\" value=\"LOCAL-00021\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728580332116</updated>\n    </task>\n    <task id=\"LOCAL-00022\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728581134199</created>\n      <option name=\"number\" value=\"00022\" />\n      <option name=\"presentableId\" value=\"LOCAL-00022\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728581134199</updated>\n    </task>\n    <task id=\"LOCAL-00023\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728581188015</created>\n      <option name=\"number\" value=\"00023\" />\n      <option name=\"presentableId\" value=\"LOCAL-00023\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728581188015</updated>\n    </task>\n    <task id=\"LOCAL-00024\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728609964268</created>\n      <option name=\"number\" value=\"00024\" />\n      <option name=\"presentableId\" value=\"LOCAL-00024\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728609964268</updated>\n    </task>\n    <task id=\"LOCAL-00025\" summary=\"changes\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1728787513759</created>\n      <option name=\"number\" value=\"00025\" />\n      <option name=\"presentableId\" value=\"LOCAL-00025\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1728787513759</updated>\n    </task>\n    <option name=\"localTasksCounter\" value=\"26\" />\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <MESSAGE value=\"changes\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"changes\" />\n  </component>\n  <component name=\"com.intellij.coverage.CoverageDataManagerImpl\">\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data_1_allow_MT.coverage\" NAME=\"mock_data_1_allow_MT Coverage Results\" MODIFIED=\"1728319052394\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$node2.coverage\" NAME=\"node2 Coverage Results\" MODIFIED=\"1728397083468\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mtmw3.coverage\" NAME=\"mtmw3 Coverage Results\" MODIFIED=\"1728447448209\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mtmw.coverage\" NAME=\"mtmw Coverage Results\" MODIFIED=\"1728424102469\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$dkg_query.coverage\" NAME=\"dkg_query Coverage Results\" MODIFIED=\"1728155224982\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/../dkg.py/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data_MT_MW.coverage\" NAME=\"mock_data_MT_MW Coverage Results\" MODIFIED=\"1728416370268\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data_1_allow.coverage\" NAME=\"mock_data_1_allow Coverage Results\" MODIFIED=\"1728502136602\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data_multithread.coverage\" NAME=\"mock_data_multithread Coverage Results\" MODIFIED=\"1728317594223\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mtmw2.coverage\" NAME=\"mtmw2 Coverage Results\" MODIFIED=\"1728425360335\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data.coverage\" NAME=\"mock_data Coverage Results\" MODIFIED=\"1728318213322\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$query.coverage\" NAME=\"query Coverage Results\" MODIFIED=\"1728278196025\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$test.coverage\" NAME=\"test Coverage Results\" MODIFIED=\"1728276747872\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mock_data_multithread2.coverage\" NAME=\"mock_data_multithread2 Coverage Results\" MODIFIED=\"1728318114704\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$marta.coverage\" NAME=\"marta Coverage Results\" MODIFIED=\"1728295633858\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$mainnet_node.coverage\" NAME=\"mainnet_node Coverage Results\" MODIFIED=\"1728155071409\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/../dkg.py/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$pub3.coverage\" NAME=\"pub3 Coverage Results\" MODIFIED=\"1728574256232\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$node3.coverage\" NAME=\"node3 Coverage Results\" MODIFIED=\"1728301299924\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$node1.coverage\" NAME=\"node1 Coverage Results\" MODIFIED=\"1728279746166\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$pub4.coverage\" NAME=\"pub4 Coverage Results\" MODIFIED=\"1728533923858\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n    <SUITE FILE_PATH=\"coverage/dkgV8_py$node.coverage\" NAME=\"node Coverage Results\" MODIFIED=\"1728300681116\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"false\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$/examples\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 7225fa9dbb7c42e0d2d15046b0b1c5fb08e6cddd)
++++ b/.idea/workspace.xml	(date 1729536745499)
+@@ -4,7 +4,11 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes" />
++    <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes">
++      <change afterPath="$PROJECT_DIR$/examples/backlog_paranet.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -41,40 +45,40 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "Python.dkg_query.executor": "Run",
+-    "Python.mainnet_node.executor": "Run",
+-    "Python.marta.executor": "Run",
+-    "Python.mock_data.executor": "Run",
+-    "Python.mock_data_1_allow.executor": "Run",
+-    "Python.mock_data_1_allow_MT.executor": "Run",
+-    "Python.mock_data_MT_MW.executor": "Run",
+-    "Python.mock_data_multithread.executor": "Run",
+-    "Python.mock_data_multithread2.executor": "Run",
+-    "Python.mtmw.executor": "Run",
+-    "Python.mtmw2.executor": "Run",
+-    "Python.mtmw3.executor": "Run",
+-    "Python.node.executor": "Run",
+-    "Python.node1.executor": "Run",
+-    "Python.node2.executor": "Run",
+-    "Python.node3.executor": "Run",
+-    "Python.pub3.executor": "Run",
+-    "Python.pub4.executor": "Run",
+-    "Python.query.executor": "Run",
+-    "Python.test.executor": "Run",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "git-widget-placeholder": "feature/update-paranets-functionality-to-v8",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "nodejs_package_manager_path": "npm",
+-    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors.Rainbow Brackets",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;Python.dkg_query.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mainnet_node.executor&quot;: &quot;Run&quot;,
++    &quot;Python.marta.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data_1_allow.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data_1_allow_MT.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data_MT_MW.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data_multithread.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mock_data_multithread2.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mtmw.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mtmw2.executor&quot;: &quot;Run&quot;,
++    &quot;Python.mtmw3.executor&quot;: &quot;Run&quot;,
++    &quot;Python.node.executor&quot;: &quot;Run&quot;,
++    &quot;Python.node1.executor&quot;: &quot;Run&quot;,
++    &quot;Python.node2.executor&quot;: &quot;Run&quot;,
++    &quot;Python.node3.executor&quot;: &quot;Run&quot;,
++    &quot;Python.pub3.executor&quot;: &quot;Run&quot;,
++    &quot;Python.pub4.executor&quot;: &quot;Run&quot;,
++    &quot;Python.query.executor&quot;: &quot;Run&quot;,
++    &quot;Python.test.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;feature/update-paranets-functionality-to-v8&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.IDE.editor.colors.Rainbow Brackets&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RunManager" selected="Python.pub3">
+     <configuration name="mock_data_1_allow" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+       <module name="dkgV8.py" />
+@@ -231,6 +235,10 @@
+       <workItem from="1728513320223" duration="18508000" />
+       <workItem from="1728674382795" duration="3850000" />
+       <workItem from="1728746576223" duration="25341000" />
++      <workItem from="1729355127885" duration="38000" />
++      <workItem from="1729355173277" duration="391000" />
++      <workItem from="1729463495391" duration="42000" />
++      <workItem from="1729463545906" duration="1973000" />
+     </task>
+     <task id="LOCAL-00001" summary="changes">
+       <option name="closed" value="true" />
+Index: examples/paranet_sub.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/paranet_sub.py b/examples/paranet_sub.py
+new file mode 100644
+--- /dev/null	(date 1729536969120)
++++ b/examples/paranet_sub.py	(date 1729536969120)
+@@ -0,0 +1,283 @@
++import os
++import pandas as pd
++import random
++import json
++from dkg import DKG
++from dkg.providers import BlockchainProvider, NodeHTTPProvider
++from dotenv import load_dotenv
++import uuid
++import time
++import concurrent.futures
++from web3 import Web3
++
++# Load environment variables (assuming you have .env with blockchain details)
++load_dotenv()
++
++# Load environment variables
++node_hostname = os.getenv("NODE_HOSTNAME")
++node_port = os.getenv('NODE_PORT')
++rpc_uri = os.getenv('BASE_TESTNET_URI')
++
++# Web3 setup
++web3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
++
++# Load private keys (for parallel processing)
++private_keys = [
++    # os.getenv('PRIVATE_KEY_1'),
++    # os.getenv('PRIVATE_KEY_2'),
++    # os.getenv('PRIVATE_KEY_3'),
++    # os.getenv('PRIVATE_KEY_4'),
++    # os.getenv('PRIVATE_KEY_5'),
++    # os.getenv('PRIVATE_KEY_6'),
++    # os.getenv('PRIVATE_KEY_7'),
++    # os.getenv('PRIVATE_KEY_8'),
++    # os.getenv('PRIVATE_KEY_9'),
++    # os.getenv('PRIVATE_KEY_10'),
++    # os.getenv('PRIVATE_KEY_11'),
++    # os.getenv('PRIVATE_KEY_12'),
++    # os.getenv('PRIVATE_KEY_13'),
++    # os.getenv('PRIVATE_KEY_14'),
++    # os.getenv('PRIVATE_KEY_15'),
++    # os.getenv('PRIVATE_KEY_16'),
++    # os.getenv('PRIVATE_KEY_17'),
++    # os.getenv('PRIVATE_KEY_18'),
++    # os.getenv('PRIVATE_KEY_19'),
++    # os.getenv('PRIVATE_KEY_20'),
++    # os.getenv('PRIVATE_KEY_21'),
++    # os.getenv('PRIVATE_KEY_22'),
++    # os.getenv('PRIVATE_KEY_23'),
++    # os.getenv('PRIVATE_KEY_24'),
++    # os.getenv('PRIVATE_KEY_25'),
++    # os.getenv('PRIVATE_KEY_26'),
++    os.getenv('PRIVATE_KEY_27'),
++    os.getenv('PRIVATE_KEY_28'),
++    os.getenv('PRIVATE_KEY_29'),
++    os.getenv('PRIVATE_KEY_30'),
++    os.getenv('PRIVATE_KEY_31'),
++    os.getenv('PRIVATE_KEY_32'),
++    os.getenv("PRIVATE_KEY_33"),
++    os.getenv("PRIVATE_KEY_34"),
++    os.getenv("PRIVATE_KEY_35"),
++    os.getenv("PRIVATE_KEY_36"),
++    os.getenv("PRIVATE_KEY_37"),
++    os.getenv("PRIVATE_KEY_38"),
++    os.getenv("PRIVATE_KEY_39"),
++    os.getenv("PRIVATE_KEY_40"),
++    os.getenv("PRIVATE_KEY_41"),
++    os.getenv("PRIVATE_KEY_42"),
++    os.getenv("PRIVATE_KEY_43"),
++    os.getenv("PRIVATE_KEY_44"),
++    os.getenv("PRIVATE_KEY_45"),
++    os.getenv("PRIVATE_KEY_46"),
++    os.getenv("PRIVATE_KEY_47"),
++    os.getenv("PRIVATE_KEY_48"),
++    os.getenv("PRIVATE_KEY_49"),
++    os.getenv("PRIVATE_KEY_50"),
++]
++
++# Generate a unique ID
++def generate_unique_id(email, ip_address):
++    random_string = f"{email}_{ip_address}"
++    return str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))
++
++# Randomly select values from each column
++def generate_random_record(df):
++    email = random.choice(df['email'].dropna().tolist())
++    ip_address = random.choice(df['ip_address'].dropna().tolist())
++    return {
++        "email": email,
++        "ip_address": ip_address
++    }
++
++# Load CSV files into a single DataFrame
++def load_csv_files(folder_path):
++    csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
++    dataframes = [pd.read_csv(os.path.join(folder_path, csv_file)) for csv_file in csv_files]
++    combined_df = pd.concat(dataframes, ignore_index=True)
++    return combined_df
++
++def create_json_ld(record):
++    return {
++        "@context": {
++            "@vocab": "http://schema.org/",
++            "id": "http://schema.org/identifier",
++            "email": "http://schema.org/email",
++            "ip_address": "http://schema.org/IPAddress"
++        },
++        "@graph": [{
++            "@type": "Person",
++            "id": str(record['id']),
++            "email": record['email'],
++            "ip_address": record['ip_address']
++        }]
++    }
++
++# Global cache for allowances
++allowance_cache = {}
++
++# Function to ensure allowance is set
++def ensure_allowance(dkg, private_key, required_allowance):
++    try:
++        if private_key in allowance_cache and allowance_cache[private_key] >= required_allowance:
++            print(f"Cached allowance is sufficient: {allowance_cache[private_key]}")
++            return
++
++        current_allowance = dkg.asset.get_current_allowance()
++        allowance_cache[private_key] = current_allowance
++
++        if current_allowance < required_allowance:
++            set_allowance(dkg, private_key, required_allowance)
++        else:
++            print(f"Allowance is already sufficient: {current_allowance}")
++    except Exception as e:
++        print(f"Error checking or setting allowance: {e}")
++
++# Function to set the allowance
++def set_allowance(dkg, private_key, allowance_value):
++    try:
++        dkg.asset.set_allowance(allowance_value)
++        allowance_cache[private_key] = allowance_value
++        print(f"======================== ALLOWANCE SET TO {allowance_value} for {private_key}")
++    except Exception as e:
++        print(f"Error setting allowance: {e}")
++
++# Function to handle nonce too low issues and retry the transaction
++def send_new_transaction(public_key, private_key):
++    try:
++        nonce = web3.eth.get_transaction_count(public_key, 'latest')
++        gas_price = web3.eth.gas_price
++        estimated_gas = web3.eth.estimate_gas({
++            'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',  # Random address to send a tiny amount
++            'from': public_key,
++            'value': web3.to_wei(0.0001, 'ether')
++        })
++
++        multiplier = 1.2  # Start with 1.2x the current gas price
++
++        while True:
++            try:
++                # Create the new transaction with the dynamic gas price
++                transaction = {
++                    'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',
++                    'value': web3.to_wei(0.0001, 'ether'),
++                    'gas': estimated_gas,
++                    'gasPrice': int(gas_price * multiplier),
++                    'nonce': nonce
++                }
++
++                # Sign and send the transaction
++                signed_txn = web3.eth.account.sign_transaction(transaction, private_key)
++                txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
++                print(f"Replacement transaction sent with hash: {web3.to_hex(txn_hash)}")
++                break  # Exit the loop on success
++
++            except Exception as e:
++                if "replacement transaction underpriced" in str(e):
++                    print(f"Transaction failed with underpriced error. Increasing gas price by 20%. Error: {str(e)}")
++                    multiplier += 0.2  # Increase gas price by 20%
++                    time.sleep(3)  # Wait for 2 seconds before retrying
++                else:
++                    print(f"Failed to send replacement transaction: {str(e)}")
++                    break  # Exit loop if it's not a gas price issue
++
++    except Exception as e:
++        print(f"Failed to initiate transaction: {str(e)}")
++
++# Function to upload knowledge assets using the DKG with nonce handling and transaction retry
++def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):
++    try:
++        node_provider = NodeHTTPProvider(f"http://{node_hostname}:{node_port}")
++        blockchain_provider = BlockchainProvider(
++            "testnet",
++            "base",
++            rpc_uri=rpc_uri,
++            private_key=private_key,
++        )
++        dkg = DKG(node_provider, blockchain_provider)
++
++        # Get public key from private key
++        public_key = web3.eth.account.from_key(private_key).address
++
++        # Ensure the allowance is set before uploading
++        ensure_allowance(dkg, private_key, allowance_value)
++
++        # Retry logic for nonce too low errors
++        retry_count = 0
++        max_retries = 5
++
++        while retry_count < max_retries:
++            try:
++                paranet_ual = "did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/5588244"
++                # Try creating the asset
++                create_asset_result = dkg.asset.create({"public": json_ld_data}, 1, paranet_ual=paranet_ual)
++                if create_asset_result:
++
++                    print(f"********************** * * * * * * * * ASSET CREATED * * * * * * * ***********************")
++                    return create_asset_result
++                break  # Exit loop on success
++
++            except Exception as e:
++                if "nonce too low" in str(e):
++                    print(f"Error creating asset: {e}. Retrying with updated nonce.")
++                    nonce = web3.eth.get_transaction_count(public_key, 'pending')
++                    send_new_transaction(public_key, private_key)
++                    retry_count += 1
++                    time.sleep(3)  # Wait before retrying
++                else:
++                    print(f"Error creating asset: {e}")
++                    break  # Exit loop if it's not a nonce issue
++
++        if retry_count == max_retries:
++            print(f"Max retries reached for nonce handling. Asset creation failed.")
++
++    except Exception as e:
++        print(f"Unexpected error: {e}")
++
++# Main execution
++if __name__ == '__main__':
++    # Path to the folder containing the CSV files
++    folder_path = '../mock_data'
++
++    # Load all CSV files into a single DataFrame
++    df = load_csv_files(folder_path)
++
++    # Set the required allowance value
++    allowance_value = 10000000000000000000  # 10 Ether equivalent (adjust as needed)
++
++    # Set up a large pool of threads, with more workers than private keys to process them concurrently
++    max_threads = 24  # Number of maximum concurrent threads
++
++    # Thread pool executor for parallel uploads
++    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
++        futures = []
++        # Loop through private keys and create assets for each
++        for _ in range(10):  # Create 5000 knowledge assets
++            # Generate a random record from the DataFrame
++            random_record = generate_random_record(df)
++
++            # Generate a unique ID for the selected record
++            random_record['id'] = generate_unique_id(
++                random_record['email'],
++                random_record['ip_address'],
++            )
++
++            # Create JSON-LD data
++            json_ld_data = create_json_ld(random_record)
++
++            # Use alternating private keys for parallel uploads
++            private_key = private_keys[_ % len(private_keys)]
++
++            # Submit the task to the executor for parallel execution
++            futures.append(executor.submit(upload_knowledge_asset_with_increase, json_ld_data, private_key, allowance_value))
++
++            # Throttle the task submission rate to prevent overloading the node
++            time.sleep(0.1)  # Delay of 0.05 seconds between task submissions
++
++        # Ensure all threads complete their tasks
++        for future in concurrent.futures.as_completed(futures):
++            try:
++                result = future.result()
++            except Exception as exc:
++                print(f"Generated an exception: {exc}")
++
++        print("All assets created.")
+Index: examples/backlog_paranet.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/backlog_paranet.py b/examples/backlog_paranet.py
+new file mode 100644
+--- /dev/null	(date 1729469471836)
++++ b/examples/backlog_paranet.py	(date 1729469471836)
+@@ -0,0 +1,322 @@
++import os
++import pandas as pd
++import random
++import json
++from dkg import DKG
++from dkg.providers import BlockchainProvider, NodeHTTPProvider
++from dotenv import load_dotenv
++import uuid
++import time
++import concurrent.futures
++from web3 import Web3
++
++# Load environment variables (assuming you have .env with blockchain details)
++load_dotenv()
++
++# Load environment variables
++node_hostname = "localhost"
++node_port = os.getenv('NODE_PORT')
++rpc_uri = os.getenv('BASE_TESTNET_URI')
++
++# Web3 setup
++web3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
++
++# Load private keys (for parallel processing)
++private_keys = [
++    # os.getenv('PRIVATE_KEY_1'),
++    # os.getenv('PRIVATE_KEY_2'),
++    # os.getenv('PRIVATE_KEY_3'),
++    # os.getenv('PRIVATE_KEY_4'),
++    # os.getenv('PRIVATE_KEY_5'),
++    # os.getenv('PRIVATE_KEY_6'),
++    # os.getenv('PRIVATE_KEY_7'),
++    # os.getenv('PRIVATE_KEY_8'),
++    # os.getenv('PRIVATE_KEY_9'),
++    # os.getenv('PRIVATE_KEY_10'),
++    # os.getenv('PRIVATE_KEY_11'),
++    # os.getenv('PRIVATE_KEY_12'),
++    # os.getenv('PRIVATE_KEY_13'),
++    # os.getenv('PRIVATE_KEY_14'),
++    # os.getenv('PRIVATE_KEY_15'),
++    # os.getenv('PRIVATE_KEY_16'),
++    # os.getenv('PRIVATE_KEY_17'),
++    # os.getenv('PRIVATE_KEY_18'),
++    # os.getenv('PRIVATE_KEY_19'),
++    # os.getenv('PRIVATE_KEY_20'),
++    # os.getenv('PRIVATE_KEY_21'),
++    # os.getenv('PRIVATE_KEY_22'),
++    # os.getenv('PRIVATE_KEY_23'),
++    # os.getenv('PRIVATE_KEY_24'),
++    # os.getenv('PRIVATE_KEY_25'),
++    # os.getenv('PRIVATE_KEY_26'),
++    os.getenv('PRIVATE_KEY_27'),
++    os.getenv('PRIVATE_KEY_28'),
++    os.getenv('PRIVATE_KEY_29'),
++    os.getenv('PRIVATE_KEY_30'),
++    os.getenv('PRIVATE_KEY_31'),
++    os.getenv('PRIVATE_KEY_32'),
++    os.getenv("PRIVATE_KEY_33"),
++    os.getenv("PRIVATE_KEY_34"),
++    os.getenv("PRIVATE_KEY_35"),
++    os.getenv("PRIVATE_KEY_36"),
++    os.getenv("PRIVATE_KEY_37"),
++    os.getenv("PRIVATE_KEY_38"),
++    os.getenv("PRIVATE_KEY_39"),
++    os.getenv("PRIVATE_KEY_40"),
++    os.getenv("PRIVATE_KEY_41"),
++    os.getenv("PRIVATE_KEY_42"),
++    os.getenv("PRIVATE_KEY_43"),
++    os.getenv("PRIVATE_KEY_44"),
++    os.getenv("PRIVATE_KEY_45"),
++    os.getenv("PRIVATE_KEY_46"),
++    os.getenv("PRIVATE_KEY_47"),
++    os.getenv("PRIVATE_KEY_48"),
++    os.getenv("PRIVATE_KEY_49"),
++    os.getenv("PRIVATE_KEY_50"),
++]
++
++# Generate a unique ID
++def generate_unique_id(first_name, last_name, email, gender, ip_address):
++    random_string = f"{first_name}_{last_name}_{email}_{gender}_{ip_address}"
++    return str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))
++
++# Randomly select values from each column
++def generate_random_record(df):
++    first_name = random.choice(df['first_name'].dropna().tolist())
++    last_name = random.choice(df['last_name'].dropna().tolist())
++    email = random.choice(df['email'].dropna().tolist())
++    gender = random.choice(df['gender'].dropna().tolist())
++    ip_address = random.choice(df['ip_address'].dropna().tolist())
++    return {
++        "first_name": first_name,
++        "last_name": last_name,
++        "email": email,
++        "gender": gender,
++        "ip_address": ip_address
++    }
++
++# Load CSV files into a single DataFrame
++def load_csv_files(folder_path):
++    csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
++    dataframes = [pd.read_csv(os.path.join(folder_path, csv_file)) for csv_file in csv_files]
++    combined_df = pd.concat(dataframes, ignore_index=True)
++    return combined_df
++
++def create_json_ld(record):
++    return {
++        "@context": {
++            "@vocab": "http://schema.org/",
++            "id": "http://schema.org/identifier",
++            "first_name": "http://schema.org/givenName",
++            "last_name": "http://schema.org/familyName",
++            "email": "http://schema.org/email",
++            "gender": "http://schema.org/gender",
++            "ip_address": "http://schema.org/IPAddress"
++        },
++        "@graph": [{
++            "@type": "Person",
++            "id": str(record['id']),
++            "first_name": record['first_name'],
++            "last_name": record['last_name'],
++            "email": record['email'],
++            "gender": record['gender'],
++            "ip_address": record['ip_address']
++        }]
++    }
++
++# Global cache for allowances
++allowance_cache = {}
++
++# Function to ensure allowance is set
++def ensure_allowance(dkg, private_key, required_allowance):
++    try:
++        if private_key in allowance_cache and allowance_cache[private_key] >= required_allowance:
++            print(f"Cached allowance is sufficient: {allowance_cache[private_key]}")
++            return
++
++        current_allowance = dkg.asset.get_current_allowance()
++        allowance_cache[private_key] = current_allowance
++
++        if current_allowance < required_allowance:
++            set_allowance(dkg, private_key, required_allowance)
++        else:
++            print(f"Allowance is already sufficient: {current_allowance}")
++    except Exception as e:
++        print(f"Error checking or setting allowance: {e}")
++
++# Function to set the allowance
++def set_allowance(dkg, private_key, allowance_value):
++    try:
++        dkg.asset.set_allowance(allowance_value)
++        allowance_cache[private_key] = allowance_value
++        print(f"======================== ALLOWANCE SET TO {allowance_value} for {private_key}")
++    except Exception as e:
++        print(f"Error setting allowance: {e}")
++
++# Function to handle nonce too low issues and retry the transaction
++def send_new_transaction(public_key, private_key):
++    try:
++        nonce = web3.eth.get_transaction_count(public_key, 'latest')
++        gas_price = web3.eth.gas_price
++        estimated_gas = web3.eth.estimate_gas({
++            'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',  # Random address to send a tiny amount
++            'from': public_key,
++            'value': web3.to_wei(0.0001, 'ether')
++        })
++
++        multiplier = 1.2  # Start with 1.2x the current gas price
++
++        while True:
++            try:
++                # Create the new transaction with the dynamic gas price
++                transaction = {
++                    'to': '0x1A52d36f4C6E3Fd618702B5C24EdeA581b5f90C4',
++                    'value': web3.to_wei(0.0001, 'ether'),
++                    'gas': estimated_gas,
++                    'gasPrice': int(gas_price * multiplier),
++                    'nonce': nonce
++                }
++
++                # Sign and send the transaction
++                signed_txn = web3.eth.account.sign_transaction(transaction, private_key)
++                txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
++                print(f"Replacement transaction sent with hash: {web3.to_hex(txn_hash)}")
++                break  # Exit the loop on success
++
++            except Exception as e:
++                if "replacement transaction underpriced" in str(e):
++                    print(f"Transaction failed with underpriced error. Increasing gas price by 20%. Error: {str(e)}")
++                    multiplier += 0.2  # Increase gas price by 20%
++                    time.sleep(3)  # Wait for 2 seconds before retrying
++                else:
++                    print(f"Failed to send replacement transaction: {str(e)}")
++                    break  # Exit loop if it's not a gas price issue
++
++    except Exception as e:
++        print(f"Failed to initiate transaction: {str(e)}")
++
++# Function to upload knowledge assets using the DKG with nonce handling and transaction retry
++def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_value):
++    try:
++        node_provider = NodeHTTPProvider(f"http://{node_hostname}:{node_port}")
++        blockchain_provider = BlockchainProvider(
++            "testnet",
++            "base",
++            rpc_uri=rpc_uri,
++            private_key=private_key,
++        )
++        dkg = DKG(node_provider, blockchain_provider)
++
++        # Get public key from private key
++        public_key = web3.eth.account.from_key(private_key).address
++
++        # Ensure the allowance is set before uploading
++        ensure_allowance(dkg, private_key, allowance_value)
++
++        # Retry logic for nonce too low errors
++        retry_count = 0
++        max_retries = 5
++
++        while retry_count < max_retries:
++            try:
++                # Try creating the asset
++                create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
++                if create_asset_result:
++
++                    print(f"********************** * * * * * * * * ASSET CREATED * * * * * * * ***********************")
++                    paranet_ual = create_asset_result.get("UAL")
++
++
++                    if paranet_ual:
++                        create_paranet_result = dkg.paranet.create(
++                            paranet_ual, "ExampleParanet", "Description of the Paranet"
++                        )
++
++                        if create_paranet_result:
++                            print("@@@@@@@@@@ PARANET CREATED @@@@@@@@@@@@")
++
++                            # Optionally create and link a service to the Paranet
++                            paranet_service_data = {
++                                "public": {
++                                    "@context": ["http://schema.org"],
++                                    "@id": str(uuid.uuid4()),
++                                    "service": "Example Service",
++                                    "model": {"@id": "uuid:model_1"},
++                                }
++                            }
++                            service_asset_result = dkg.asset.create(paranet_service_data, 1)
++                            paranet_service_ual = service_asset_result.get("UAL")
++
++                            if paranet_service_ual:
++                                dkg.paranet.add_services(paranet_ual, [paranet_service_ual])
++                                print("^^^^^^^^^^^^^ SERVICE LINKED TO PARANET ^^^^^^^^^^^^^")
++
++
++                    return create_asset_result
++                break  # Exit loop on success
++
++            except Exception as e:
++                if "nonce too low" in str(e):
++                    print(f"Error creating asset: {e}. Retrying with updated nonce.")
++                    nonce = web3.eth.get_transaction_count(public_key, 'pending')
++                    send_new_transaction(public_key, private_key)
++                    retry_count += 1
++                    time.sleep(3)  # Wait before retrying
++                else:
++                    print(f"Error creating asset: {e}")
++                    break  # Exit loop if it's not a nonce issue
++
++        if retry_count == max_retries:
++            print(f"Max retries reached for nonce handling. Asset creation failed.")
++
++    except Exception as e:
++        print(f"Unexpected error: {e}")
++
++# Main execution
++if __name__ == '__main__':
++    # Path to the folder containing the CSV files
++    folder_path = '../mock_data'
++
++    # Load all CSV files into a single DataFrame
++    df = load_csv_files(folder_path)
++
++    # Set the required allowance value
++    allowance_value = 10000000000000000000  # 10 Ether equivalent (adjust as needed)
++
++    # Set up a large pool of threads, with more workers than private keys to process them concurrently
++    max_threads = 24  # Number of maximum concurrent threads
++
++    # Thread pool executor for parallel uploads
++    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
++        futures = []
++        # Loop through private keys and create assets for each
++        for _ in range(10):  # Create 5000 knowledge assets
++            # Generate a random record from the DataFrame
++            random_record = generate_random_record(df)
++
++            # Generate a unique ID for the selected record
++            random_record['id'] = generate_unique_id(
++                random_record['email'],
++                random_record['ip_address'],
++            )
++
++            # Create JSON-LD data
++            json_ld_data = create_json_ld(random_record)
++
++            # Use alternating private keys for parallel uploads
++            private_key = private_keys[_ % len(private_keys)]
++
++            # Submit the task to the executor for parallel execution
++            futures.append(executor.submit(upload_knowledge_asset_with_increase, json_ld_data, private_key, allowance_value))
++
++            # Throttle the task submission rate to prevent overloading the node
++            time.sleep(0.1)  # Delay of 0.05 seconds between task submissions
++
++        # Ensure all threads complete their tasks
++        for future in concurrent.futures.as_completed(futures):
++            try:
++                result = future.result()
++            except Exception as exc:
++                print(f"Generated an exception: {exc}")
++
++        print("All assets created.")
