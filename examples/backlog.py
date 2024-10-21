@@ -14,7 +14,7 @@ from web3 import Web3
 load_dotenv()
 
 # Load environment variables
-node_hostname = "localhost"
+node_hostname = os.getenv("NODE_HOSTNAME")
 node_port = os.getenv('NODE_PORT')
 rpc_uri = os.getenv('BASE_TESTNET_URI')
 
@@ -235,7 +235,7 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
 # Main execution
 if __name__ == '__main__':
     # Path to the folder containing the CSV files
-    folder_path = '../mock_data'
+    folder_path = '/Users/leesimpson/Desktop/mock_data'
 
     # Load all CSV files into a single DataFrame
     df = load_csv_files(folder_path)
