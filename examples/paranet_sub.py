@@ -10,6 +10,8 @@ import time
 import concurrent.futures
 from web3 import Web3
 
+
+
 # Load environment variables (assuming you have .env with blockchain details)
 load_dotenv()
 
@@ -23,32 +25,32 @@ web3 = Web3(Web3.HTTPProvider("https://sepolia.base.org"))
 
 # Load private keys (for parallel processing)
 private_keys = [
-    os.getenv('PRIVATE_KEY_1'),
-    os.getenv('PRIVATE_KEY_2'),
-    os.getenv('PRIVATE_KEY_3'),
-    os.getenv('PRIVATE_KEY_4'),
-    os.getenv('PRIVATE_KEY_5'),
-    os.getenv('PRIVATE_KEY_6'),
-    os.getenv('PRIVATE_KEY_7'),
-    os.getenv('PRIVATE_KEY_8'),
-    os.getenv('PRIVATE_KEY_9'),
-    os.getenv('PRIVATE_KEY_10'),
-    os.getenv('PRIVATE_KEY_11'),
-    os.getenv('PRIVATE_KEY_12'),
-    os.getenv('PRIVATE_KEY_13'),
-    os.getenv('PRIVATE_KEY_14'),
-    os.getenv('PRIVATE_KEY_15'),
-    os.getenv('PRIVATE_KEY_16'),
-    os.getenv('PRIVATE_KEY_17'),
-    os.getenv('PRIVATE_KEY_18'),
-    os.getenv('PRIVATE_KEY_19'),
-    os.getenv('PRIVATE_KEY_20'),
-    os.getenv('PRIVATE_KEY_21'),
-    os.getenv('PRIVATE_KEY_22'),
-    os.getenv('PRIVATE_KEY_23'),
-    os.getenv('PRIVATE_KEY_24'),
-    os.getenv('PRIVATE_KEY_25'),
-    os.getenv('PRIVATE_KEY_26'),
+    # os.getenv('PRIVATE_KEY_1'),
+    # os.getenv('PRIVATE_KEY_2'),
+    # os.getenv('PRIVATE_KEY_3'),
+    # os.getenv('PRIVATE_KEY_4'),
+    # os.getenv('PRIVATE_KEY_5'),
+    # os.getenv('PRIVATE_KEY_6'),
+    # os.getenv('PRIVATE_KEY_7'),
+    # os.getenv('PRIVATE_KEY_8'),
+    # os.getenv('PRIVATE_KEY_9'),
+    # os.getenv('PRIVATE_KEY_10'),
+    # os.getenv('PRIVATE_KEY_11'),
+    # os.getenv('PRIVATE_KEY_12'),
+    # os.getenv('PRIVATE_KEY_13'),
+    # os.getenv('PRIVATE_KEY_14'),
+    # os.getenv('PRIVATE_KEY_15'),
+    # os.getenv('PRIVATE_KEY_16'),
+    # os.getenv('PRIVATE_KEY_17'),
+    # os.getenv('PRIVATE_KEY_18'),
+    # os.getenv('PRIVATE_KEY_19'),
+    # os.getenv('PRIVATE_KEY_20'),
+    # os.getenv('PRIVATE_KEY_21'),
+    # os.getenv('PRIVATE_KEY_22'),
+    # os.getenv('PRIVATE_KEY_23'),
+    # os.getenv('PRIVATE_KEY_24'),
+    # os.getenv('PRIVATE_KEY_25'),
+    # os.getenv('PRIVATE_KEY_26'),
     os.getenv('PRIVATE_KEY_27'),
     os.getenv('PRIVATE_KEY_28'),
     os.getenv('PRIVATE_KEY_29'),
@@ -76,16 +78,23 @@ private_keys = [
 ]
 
 # Generate a unique ID
-def generate_unique_id(email, ip_address):
-    random_string = f"{email}_{ip_address}"
+def generate_unique_id(first_name, last_name, email, gender, ip_address):
+    random_string = f"{first_name}_{last_name}_{email}_{gender}_{ip_address}"
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, random_string))
 
 # Randomly select values from each column
 def generate_random_record(df):
+    first_name = random.choice(df['first_name'].dropna().tolist())
+    last_name = random.choice(df['last_name'].dropna().tolist())
     email = random.choice(df['email'].dropna().tolist())
+    gender = random.choice(df['gender'].dropna().tolist())
     ip_address = random.choice(df['ip_address'].dropna().tolist())
+
     return {
+        "first_name": first_name,
+        "last_name": last_name,
         "email": email,
+        "gender": gender,
         "ip_address": ip_address
     }
 
@@ -101,13 +110,19 @@ def create_json_ld(record):
         "@context": {
             "@vocab": "http://schema.org/",
             "id": "http://schema.org/identifier",
+            "first_name": "http://schema.org/givenName",
+            "last_name": "http://schema.org/familyName",
             "email": "http://schema.org/email",
+            "gender": "http://schema.org/gender",
             "ip_address": "http://schema.org/IPAddress"
         },
         "@graph": [{
             "@type": "Person",
             "id": str(record['id']),
+            "first_name": record['first_name'],
+            "last_name": record['last_name'],
             "email": record['email'],
+            "gender": record['gender'],
             "ip_address": record['ip_address']
         }]
     }
@@ -207,11 +222,12 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
 
         while retry_count < max_retries:
             try:
+                paranet_url="did:dkg:base:84532/0xb8b904c73d2fb4d8c173298a51c27fab70222c32/5588244"
                 # Try creating the asset
-                create_asset_result = dkg.asset.create({"public": json_ld_data}, 1)
+                create_asset_result = dkg.asset.create({"public": json_ld_data}, 1, paranet_ual=paranet_url)
                 if create_asset_result:
 
-                    print(f"********************** * * * * * * * * ASSET CREATED * * * * * * * ***********************")
+                    print(f"********************** * * * * * * * * ASSET SUBMITTED TO PARANET * * * * * * * ***********************")
                     return create_asset_result
                 break  # Exit loop on success
 
@@ -235,7 +251,7 @@ def upload_knowledge_asset_with_increase(json_ld_data, private_key, allowance_va
 # Main execution
 if __name__ == '__main__':
     # Path to the folder containing the CSV files
-    folder_path = '../mock_data'
+    folder_path = '/Users/leesimpson/Desktop/mock_data'
 
     # Load all CSV files into a single DataFrame
     df = load_csv_files(folder_path)
@@ -244,20 +260,23 @@ if __name__ == '__main__':
     allowance_value = 10000000000000000000  # 10 Ether equivalent (adjust as needed)
 
     # Set up a large pool of threads, with more workers than private keys to process them concurrently
-    max_threads = 50  # Number of maximum concurrent threads
+    max_threads = 24  # Number of maximum concurrent threads
 
     # Thread pool executor for parallel uploads
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = []
         # Loop through private keys and create assets for each
-        for _ in range(5000):  # Create 5000 knowledge assets
+        for _ in range(10):  # Create 5000 knowledge assets
             # Generate a random record from the DataFrame
             random_record = generate_random_record(df)
 
             # Generate a unique ID for the selected record
             random_record['id'] = generate_unique_id(
+                random_record['first_name'],
+                random_record['last_name'],
                 random_record['email'],
-                random_record['ip_address'],
+                random_record['gender'],
+                random_record['ip_address']
             )
 
             # Create JSON-LD data
