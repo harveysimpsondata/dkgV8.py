@@ -1,0 +1,17 @@
+{
+    "workbench.colorCustomizations": {
+        "[Default Dark+]": {
+            "editorBracketMatch.border": "#ff0000",
+            "editorBracketMatch.background": "#000000",
+            "editorIndentGuide.background": "#fff000",
+            "editorBracketPairGuide.activeBackground1": "#0ffff0",
+            "editorBracketPairGuide.activeBackground2": "#0ffff0",
+            "editorBracketPairGuide.activeBackground3": "#0ffff0",
+            "editorBracketPairGuide.activeBackground4": "#0ffff0",
+            "editorBracketPairGuide.activeBackground5": "#0ffff0",
+            "editorBracketPairGuide.activeBackground6": "#0ffff0"
+        },
+        "minimap.background": "#00000000",
+        "scrollbar.shadow": "#00000000"
+    }
+}

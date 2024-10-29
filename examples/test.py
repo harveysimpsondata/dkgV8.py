@@ -16,7 +16,7 @@ from web3 import Web3
 load_dotenv()
 
 # Load environment variables
-node_hostname = "192.168.1.36"
+node_hostname = "134.122.115.137"
 node_port = os.getenv('NODE_PORT')
 rpc_uri = "https://84532.rpc.thirdweb.com/7121fce4e60c849496e43d5c737c0b35"
 private_key = os.getenv('PRIVATE_KEY_12')
@@ -50,7 +50,7 @@ paranet_data = {
     "public": {
         "@context": ["http://schema.org"],
         "@id": "uuid:112345",
-        "company": "OT",
+        "company": "bah",
         "city": {"@id": "uuid:belgrade"},
     }
 }
@@ -67,6 +67,8 @@ create_paranet_result = dkg.paranet.create(
     paranet_ual,
     "TestParanet",
     "TestParanetDescription",
+    paranet_nodes_access_policy=0,
+    paranet_miners_access_policy=0
 )
 
 print("======================== PARANET CREATED")
