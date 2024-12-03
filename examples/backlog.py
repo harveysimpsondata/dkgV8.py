@@ -242,7 +242,7 @@ if __name__ == '__main__':
 
     # Set the required allowance value
     allowance_value = 10000000000000000000  # 10 Ether equivalent (adjust as needed)
-
+    
     # Set up a large pool of threads, with more workers than private keys to process them concurrently
     max_threads = 50  # Number of maximum concurrent threads
 

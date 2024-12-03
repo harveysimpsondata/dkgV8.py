@@ -5,8 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4d13cafe-aac5-441e-b5a4-15d6aae2ce8f" name="Changes" comment="changes">
+      <change afterPath="$PROJECT_DIR$/examples/paranetQuery_checkMiners.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/examples/web3_wallets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/backlog.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/backlog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/curated_paranets_demo.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/curated_paranets_demo.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mock_data_1_allow.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub10.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub11.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub4.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub5.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub6.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pub9.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pubLo.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/recipes.py" beforeDir="false" afterPath="$PROJECT_DIR$/examples/recipes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/submit_ka_2_paranets.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/ual_extract.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,6 +81,7 @@
     &quot;Python.node1.executor&quot;: &quot;Run&quot;,
     &quot;Python.node2.executor&quot;: &quot;Run&quot;,
     &quot;Python.node3.executor&quot;: &quot;Run&quot;,
+    &quot;Python.paranetQuery_checkMiners.executor&quot;: &quot;Run&quot;,
     &quot;Python.paranet_sub.executor&quot;: &quot;Run&quot;,
     &quot;Python.pub3.executor&quot;: &quot;Run&quot;,
     &quot;Python.pub4.executor&quot;: &quot;Run&quot;,
@@ -79,12 +98,12 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.IDE.editor.colors.Rainbow Brackets&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.rainbow.brackets.color&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.test">
-    <configuration name="paranet_sub" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.paranetQuery_checkMiners">
+    <configuration name="paranetQuery_checkMiners" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="dkgV8.py" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -98,7 +117,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/examples/paranet_sub.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/examples/paranetQuery_checkMiners.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -201,19 +220,19 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.paranetQuery_checkMiners" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.submit_ka_2_paranets" />
         <item itemvalue="Python.submit_to_paranet" />
         <item itemvalue="Python.ual_extract" />
-        <item itemvalue="Python.paranet_sub" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-bed05e336f61-JavaScript-PY-243.21155.22" />
-        <option value="bundled-python-sdk-5ff8a29a62a8-ca77fbc60dd9-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.21155.22" />
+        <option value="bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-PY-243.22562.68" />
+        <option value="bundled-python-sdk-434b4e3f034a-9a18a617cbe4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.22562.68" />
       </set>
     </attachedChunks>
   </component>
@@ -248,6 +267,22 @@
       <workItem from="1730124374355" duration="4815000" />
       <workItem from="1730135693021" duration="19000" />
       <workItem from="1730136530564" duration="819000" />
+      <workItem from="1730241446895" duration="1580000" />
+      <workItem from="1730251115052" duration="546000" />
+      <workItem from="1730422883806" duration="25000" />
+      <workItem from="1730529777200" duration="868000" />
+      <workItem from="1730651073044" duration="1616000" />
+      <workItem from="1730850334485" duration="54000" />
+      <workItem from="1730913947047" duration="4105000" />
+      <workItem from="1730941810210" duration="717000" />
+      <workItem from="1731020655336" duration="1909000" />
+      <workItem from="1731041624006" duration="414000" />
+      <workItem from="1731379874298" duration="4256000" />
+      <workItem from="1731735245241" duration="112000" />
+      <workItem from="1731735365296" duration="1927000" />
+      <workItem from="1731780053226" duration="2453000" />
+      <workItem from="1731783212527" duration="669000" />
+      <workItem from="1733193664704" duration="422000" />
     </task>
     <task id="LOCAL-00001" summary="changes">
       <option name="closed" value="true" />
@@ -476,6 +511,7 @@
     <SUITE FILE_PATH="coverage/dkgV8_py$node1.coverage" NAME="node1 Coverage Results" MODIFIED="1728279746166" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/dkgV8_py$node.coverage" NAME="node Coverage Results" MODIFIED="1728300681116" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/dkgV8_py$node2.coverage" NAME="node2 Coverage Results" MODIFIED="1728397083468" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
+    <SUITE FILE_PATH="coverage/dkgV8_py$paranetQuery_checkMiners.coverage" NAME="paranetQuery_checkMiners Coverage Results" MODIFIED="1731783227757" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/dkgV8_py$ual_extract.coverage" NAME="ual_extract Coverage Results" MODIFIED="1729567417369" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/dkgV8_py$mtmw.coverage" NAME="mtmw Coverage Results" MODIFIED="1728424102469" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/dkgV8_py$mock_data_MT_MW.coverage" NAME="mock_data_MT_MW Coverage Results" MODIFIED="1728416370268" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />

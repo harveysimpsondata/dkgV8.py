@@ -97,119 +97,119 @@ paranet_data = {
     }
 }
 
-# create_paranet_knowledge_asset_result = dkg.asset.create(paranet_data, 1)
+create_paranet_knowledge_asset_result = dkg.asset.create(paranet_data, 1)
 
-# print("======================== PARANET KNOWLEDGE ASSET CREATED")
-# print_json(create_paranet_knowledge_asset_result)
+print("======================== PARANET KNOWLEDGE ASSET CREATED")
+print_json(create_paranet_knowledge_asset_result)
 
-# divider()
+divider()
 
-# paranet_ual = create_paranet_knowledge_asset_result["UAL"]
-# create_paranet_result = dkg.paranet.create(
-#     paranet_ual,
-#     "TestParanet",
-#     "TestParanetDescription",
-#     ParanetNodesAccessPolicy.CURATED,
-#     ParanetMinersAccessPolicy.CURATED
-# )
+paranet_ual = create_paranet_knowledge_asset_result["UAL"]
+create_paranet_result = dkg.paranet.create(
+    paranet_ual,
+    "TestParanet",
+    "TestParanetDescription",
+    ParanetNodesAccessPolicy.CURATED,
+    ParanetMinersAccessPolicy.CURATED
+)
 
-# print("======================== A CURATED PARANET REGISTERED")
-# print_json(create_paranet_result)
+print("======================== A CURATED PARANET REGISTERED")
+print_json(create_paranet_result)
 
-# divider()
+divider()
 
-# identity_ids = [node1_identity_id, node2_identity_id, node3_identity_id]
-# dkg.paranet.add_curated_nodes(paranet_ual, identity_ids)
-# curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-# print("======================== ADDED NODES TO A CURATED PARANET")
-# print_json(curated_nodes)
+identity_ids = [node1_identity_id, node2_identity_id, node3_identity_id]
+dkg.paranet.add_curated_nodes(paranet_ual, identity_ids)
+curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
+print("======================== ADDED NODES TO A CURATED PARANET")
+print_json(curated_nodes)
 
-# divider()
+divider()
 
-# identity_ids = [node2_identity_id, node3_identity_id]
-# dkg.paranet.remove_curated_nodes(paranet_ual, identity_ids)
-# curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-# print("======================== REMOVED NODES FROM A CURATED PARANET")
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": curated_nodes
-# })
+identity_ids = [node2_identity_id, node3_identity_id]
+dkg.paranet.remove_curated_nodes(paranet_ual, identity_ids)
+curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
+print("======================== REMOVED NODES FROM A CURATED PARANET")
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": curated_nodes
+})
 
-# divider()
+divider()
 
-# dkg2.paranet.request_curated_node_access(paranet_ual)
-# time.sleep(5)
-# dkg.paranet.reject_curated_node(paranet_ual, node2_identity_id)
-# print("======================== REJECT A NODE'S ACCESS REQUEST TO A CURATED PARANET")
-# curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": curated_nodes
-# })
+dkg2.paranet.request_curated_node_access(paranet_ual)
+time.sleep(5)
+dkg.paranet.reject_curated_node(paranet_ual, node2_identity_id)
+print("======================== REJECT A NODE'S ACCESS REQUEST TO A CURATED PARANET")
+curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": curated_nodes
+})
 
-# divider()
+divider()
 
-# dkg2.paranet.request_curated_node_access(paranet_ual)
-# time.sleep(5)
-# dkg.paranet.approve_curated_node(paranet_ual, node2_identity_id)
-# print("======================== APPROVE A NODE'S ACCESS REQUEST TO A CURATED PARANET")
-# curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": curated_nodes
-# })
+dkg2.paranet.request_curated_node_access(paranet_ual)
+time.sleep(5)
+dkg.paranet.approve_curated_node(paranet_ual, node2_identity_id)
+print("======================== APPROVE A NODE'S ACCESS REQUEST TO A CURATED PARANET")
+curated_nodes = dkg.paranet.get_curated_nodes(paranet_ual)
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": curated_nodes
+})
 
-# divider()
+divider()
 
-# miner_addresses = [
-#     dkg3.blockchain_provider.account.address,
-#     dkg4.blockchain_provider.account.address,
-#     dkg5.blockchain_provider.account.address,
-# ]
-# dkg.paranet.add_curated_miners(paranet_ual, miner_addresses)
-# knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-# print("======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET")
-# print_json(knowledge_miners)
+miner_addresses = [
+    dkg3.blockchain_provider.account.address,
+    dkg4.blockchain_provider.account.address,
+    dkg5.blockchain_provider.account.address,
+]
+dkg.paranet.add_curated_miners(paranet_ual, miner_addresses)
+knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
+print("======================== ADDED KNOWLEDGE MINERS TO A CURATED PARANET")
+print_json(knowledge_miners)
 
-# divider()
+divider()
 
-# miner_addresses = [
-#     dkg4.blockchain_provider.account.address,
-#     dkg5.blockchain_provider.account.address,
-# ]
-# dkg.paranet.remove_curated_miners(paranet_ual, miner_addresses)
-# knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-# print("======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET")
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": knowledge_miners
-# })
+miner_addresses = [
+    dkg4.blockchain_provider.account.address,
+    dkg5.blockchain_provider.account.address,
+]
+dkg.paranet.remove_curated_miners(paranet_ual, miner_addresses)
+knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
+print("======================== REMOVED KNOWLEDGE MINERS FROM A CURATED PARANET")
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": knowledge_miners
+})
 
-# divider()
+divider()
 
-# dkg4.paranet.request_curated_miner_access(paranet_ual)
-# time.sleep(5)
-# dkg.paranet.reject_curated_miner(paranet_ual, dkg4.blockchain_provider.account.address)
-# print("======================== REJECT A MINER'S ACCESS REQUEST TO A CURATED PARANET")
-# knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": knowledge_miners
-# })
+dkg4.paranet.request_curated_miner_access(paranet_ual)
+time.sleep(5)
+dkg.paranet.reject_curated_miner(paranet_ual, dkg4.blockchain_provider.account.address)
+print("======================== REJECT A MINER'S ACCESS REQUEST TO A CURATED PARANET")
+knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": knowledge_miners
+})
 
-# divider()
+divider()
 
-# dkg4.paranet.request_curated_miner_access(paranet_ual)
-# time.sleep(5)
-# dkg.paranet.approve_curated_miner(paranet_ual, dkg4.blockchain_provider.account.address)
-# print("======================== APPROVE A MINER'S ACCESS REQUEST TO A CURATED PARANET")
-# knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
-# print_json({
-#     "paranetUAL": paranet_ual,
-#     "curatedNodes": knowledge_miners
-# })
+dkg4.paranet.request_curated_miner_access(paranet_ual)
+time.sleep(5)
+dkg.paranet.approve_curated_miner(paranet_ual, dkg4.blockchain_provider.account.address)
+print("======================== APPROVE A MINER'S ACCESS REQUEST TO A CURATED PARANET")
+knowledge_miners = dkg.paranet.get_knowledge_miners(paranet_ual)
+print_json({
+    "paranetUAL": paranet_ual,
+    "curatedNodes": knowledge_miners
+})
 
-# divider()
+divider()
 
 paranet_ual = 'did:dkg:hardhat2:31337/0x8aafc28174bb6c3bdc7be92f18c2f134e876c05e/1'
 
